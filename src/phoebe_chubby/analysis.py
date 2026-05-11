@@ -69,7 +69,7 @@ def run_single_race() -> str:
     return "平局"
 
 def run_batch_simulation(num_trials=1000):
-    print(f"正在模擬 {num_trials} 場比賽 (幽靈布大王模式)，請稍候...")
+    print(f"正在模擬 {num_trials} 場比賽 (布大王模式)，請稍候...")
     win_counts = {}
     
     for i in range(num_trials):
@@ -79,7 +79,7 @@ def run_batch_simulation(num_trials=1000):
         if (i + 1) % 100 == 0:
             print(f"已完成 {i + 1} 場...")
 
-    print("\n🏆 === 統計結果 (幽靈布大王) ===")
+    print("\n🏆 === 統計結果 (布大王) ===")
     sorted_stats = sorted(win_counts.items(), key=lambda x: x[1], reverse=True)
     for name, wins in sorted_stats:
         win_rate = (wins / num_trials) * 100
