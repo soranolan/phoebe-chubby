@@ -1,6 +1,6 @@
 # 鳴潮：小團快跑 模擬分析器 (Phoebe Chubby Simulator)
 
-這是一個專為《鳴潮》活動設計的高度精確「小團快跑」模擬分析器。它不僅模擬了基本的位移，還完美還原了複雜的物理堆疊、帶動邏輯、以及噩夢級的布大王掃街機制。
+這是一個簡單的小團快跑模擬賽分析器。
 
 ## 核心規則說明
 
@@ -43,17 +43,17 @@
 
 ## 如何執行
 
-### 單場模擬 (顯示詳細戰報)
+### 單場模擬
 ```bash
 export PYTHONPATH=$PYTHONPATH:$(pwd)/src
-python3 -m phoebe_chubby.simulator.main
+python3 -m phoebe_chubby.main
 ```
 
-### 批量分析 (大數據統計)
+### 批量分析
 ```bash
 export PYTHONPATH=$PYTHONPATH:$(pwd)/src
-python3 -m phoebe_chubby.simulator.analysis 10000
+python3 -m phoebe_chubby.analysis 10000
 ```
 
 ---
-*本模擬器由 Antigravity 協力開發，旨在提供最科學的模擬預測建議。*
+*本模擬器由 Antigravity 協力開發。*
