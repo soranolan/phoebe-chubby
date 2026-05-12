@@ -11,10 +11,16 @@ class Tuanzi:
     def roll_dice(self) -> int:
         return 0 # 子類別實作
 
-    def calculate_steps(self, roll: int, all_rolls: Dict['Tuanzi', int]) -> int:
+    def calculate_steps(self, roll: int, all_rolls: Dict['Tuanzi', int], tiles: List[List['Tuanzi']] = None) -> int:
         return roll
 
     insert_at_bottom: bool = False # 是否強制鑽到堆疊最下面
+    is_skipping: bool = False      # 本回合是否跳過行動
+    force_last: bool = False       # 本回合是否強制最後一個行動
+
+    def prepare_round(self, tiles: List[List['Tuanzi']], forced_last_queue: List['Tuanzi'] = None, verbose: bool = True):
+        """每回合開始前的準備動作"""
+        pass
 
     def move(self, steps: int, tiles: List[List['Tuanzi']]):
         """執行物理位移，並帶動上方所有團子移動"""
@@ -57,7 +63,7 @@ class Tuanzi:
         steps = self.calculate_steps(roll, all_rolls)
         self.move(steps, tiles)
 
-    def on_pass_midpoint(self, tiles: List[List['Tuanzi']]):
+    def on_pass_midpoint(self, tiles: List[List['Tuanzi']], verbose: bool = True):
         """中點觸發勾子"""
         pass
 
