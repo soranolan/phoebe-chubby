@@ -18,28 +18,15 @@
 *   **倒退陷阱 (10, 28)**：物理強制推向 1 方向 1 格。
 *   **空間裂隙 (6, 20)**：隨機重組該格的堆疊順序。
 
-## 執行方式
+## 如何執行
 
-詳細轉播（單場）：
+### 詳細轉播模式 (單場)
 ```bash
 python3 -m src.phoebe_chubby.main
 ```
 
-數據分析（批次）：
+### 純數據統計模式 (批次)
 ```bash
+# 執行一百萬場分析
 python3 -m src.phoebe_chubby.analysis 1000000
-```
-
-## 如何執行
-
-### 單場模擬
-```bash
-export PYTHONPATH=$PYTHONPATH:$(pwd)/src
-python3 -m phoebe_chubby.main
-```
-
-### 批量分析
-```bash
-export PYTHONPATH=$PYTHONPATH:$(pwd)/src
-python3 -m phoebe_chubby.analysis 10000
 ```
