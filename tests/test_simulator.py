@@ -1,57 +1,93 @@
+import sys
 import unittest
+sys.path.insert(0, "src")
+
 from phoebe_chubby.models import Tuanzi
+from phoebe_chubby.characters import CalcharoTuanzi, KingBuTuanzi, AugustaTuanzi
 
-class MockTuanzi(Tuanzi):
-    def roll_dice(self) -> int:
-        return 3
 
-class TestTuanziMovement(unittest.TestCase):
-    def setUp(self):
-        # 模擬一個 32 格的地圖，每一格都是一個 list (堆疊)
-        self.tiles = [[] for _ in range(33)]
-        self.t1 = MockTuanzi(name="團子A", position=1)
-        self.t2 = MockTuanzi(name="團子B", position=1)
-        self.tiles[1] = [self.t1, self.t2] # A 在下，B 在上
+def make_tiles(size=33):
+    return [[] for _ in range(size)]
 
-    def test_basic_move(self):
-        """測試單一團子的基礎移動"""
-        # 讓 B 移動到第 5 格 (移動 4 格)
-        self.t2.move(4, self.tiles)
-        
-        self.assertEqual(self.t2.position, 5)
-        self.assertIn(self.t2, self.tiles[5])
-        self.assertNotIn(self.t2, self.tiles[1])
 
-    def test_stack_towing(self):
-        """測試移動時是否帶動上方的團子 (Towing Effect)"""
-        # 在第 10 格放置堆疊：A(底) -> B -> C(頂)
-        t3 = MockTuanzi(name="團子C", position=10)
-        self.t1.position = 10
-        self.t2.position = 10
-        self.tiles[10] = [self.t1, self.t2, t3]
-        
-        # 移動中間的 B 往後 2 格，應該帶動 C，但不帶動 A
-        self.t2.move(2, self.tiles)
-        
-        self.assertEqual(self.t2.position, 12)
-        self.assertEqual(t3.position, 12)
-        self.assertEqual(self.t1.position, 10)
-        
-        # 檢查物理堆疊順序是否維持
-        self.assertEqual(self.tiles[12], [self.t2, t3])
-        self.assertEqual(self.tiles[10], [self.t1])
+class TestTuanziMove(unittest.TestCase):
 
-    def test_boundary_limit(self):
-        """測試移動不會超出 1-32 格"""
-        # 嘗試從 1 往回走 10 格
-        self.t1.move(-10, self.tiles)
-        self.assertEqual(self.t1.position, 1)
-        
-        # 嘗試從 30 往前走 10 格
-        self.t1.position = 30
-        self.tiles[30] = [self.t1]
-        self.t1.move(10, self.tiles)
-        self.assertEqual(self.t1.position, 32)
+    def test_move_decrements_remaining_distance(self):
+        """移動後剩餘里程應正確扣除"""
+        tiles = make_tiles()
+        char = CalcharoTuanzi(start_pos=5)
+        char.remaining_distance = 20
+        tiles[5] = [char]
+        char.move(3, tiles)
+        self.assertEqual(char.remaining_distance, 17)
+        self.assertEqual(char.position, 8)
+
+    def test_move_wraps_around_board(self):
+        """超過 32 格應循環回到 1 號位"""
+        tiles = make_tiles()
+        char = CalcharoTuanzi(start_pos=31)
+        char.remaining_distance = 10
+        tiles[31] = [char]
+        char.move(3, tiles)
+        self.assertEqual(char.position, 2)
+        self.assertEqual(char.remaining_distance, 7)
+
+    def test_move_carries_stack(self):
+        """移動時應帶著上方的團子一起移動"""
+        tiles = make_tiles()
+        bottom = CalcharoTuanzi(start_pos=5)
+        bottom.remaining_distance = 20
+        top = AugustaTuanzi(start_pos=5)
+        top.remaining_distance = 20
+        tiles[5] = [bottom, top]
+
+        bottom.move(3, tiles)
+
+        self.assertEqual(bottom.position, 8)
+        self.assertEqual(top.position, 8)
+        self.assertIn(bottom, tiles[8])
+        self.assertIn(top, tiles[8])
+
+    def test_skill_resets_on_milestone(self):
+        """剩餘里程跨過 32 的倍數時，技能旗標應重置"""
+        tiles = make_tiles()
+        char = CalcharoTuanzi(start_pos=5)
+        char.remaining_distance = 2
+        char.has_triggered_special = True
+        tiles[5] = [char]
+        char.move(3, tiles)  # 剩餘從 2 → -1，跨過 0（32 的倍數邊界）
+        self.assertFalse(char.has_triggered_special)
+
+    def test_move_zero_steps_does_nothing(self):
+        """移動 0 步不應改變任何狀態"""
+        tiles = make_tiles()
+        char = CalcharoTuanzi(start_pos=5)
+        char.remaining_distance = 20
+        tiles[5] = [char]
+        char.move(0, tiles)
+        self.assertEqual(char.position, 5)
+        self.assertEqual(char.remaining_distance, 20)
+
+
+class TestKingBuMove(unittest.TestCase):
+
+    def test_kingbu_inserts_at_bottom(self):
+        """布大王移動後應插入新格子的最底層"""
+        tiles = make_tiles()
+        kingbu = KingBuTuanzi(start_pos=5)
+        kingbu.remaining_distance = 1010
+        tiles[5] = [kingbu]
+
+        # 布大王往後退 3 步：5 → 2
+        kingbu.move(-3, tiles)
+
+        # 確認移動到正確位置
+        self.assertEqual(kingbu.position, 2)
+        # 確認在格子中
+        self.assertIn(kingbu, tiles[2])
+        # 確認在格子最底層 (index 0)
+        self.assertEqual(tiles[2][0], kingbu)
+
 
 if __name__ == "__main__":
     unittest.main()

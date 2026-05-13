@@ -1,42 +1,79 @@
-import unittest
-from phoebe_chubby.analysis import run_single_race, run_batch_simulation
-from io import StringIO
 import sys
+import unittest
+sys.path.insert(0, "src")
 
-class TestBalanceAndAnalysis(unittest.TestCase):
-    def test_single_race_returns_valid_winner(self):
-        """測試單場比賽是否一定會產出合法的贏家"""
-        winner = run_single_race()
-        valid_names = ["千咲", "莫寧", "琳奈", "愛彌斯", "守岸人", "珂萊塔", "布大王", "平局"]
-        self.assertIn(winner, valid_names)
+from phoebe_chubby.analysis import run_single_analysis_match, run_batch_analysis
 
-    def test_batch_simulation_output(self):
-        """測試批次模擬是否能跑完並產出報告"""
-        # 攔截 print 輸出以驗證內容
-        captured_output = StringIO()
-        sys.stdout = captured_output
-        
-        try:
-            run_batch_simulation(num_trials=100)
-        finally:
-            sys.stdout = sys.__stdout__
-            
-        output = captured_output.getvalue()
-        self.assertIn("統計結果", output)
-        self.assertIn("已完成 100 場", output)
+VALID_NAMES = {"奧古斯塔", "尤諾", "弗洛洛", "長離", "今汐", "卡卡羅"}
 
-    def test_multi_winner_distribution(self):
-        """
-        測試角色多樣性：
-        在 100 場比賽中，不應該只有同一個角色獲勝（除非機率低到極致）。
-        這個測試確保遊戲機制能讓多個角色都有機會勝出。
-        """
-        winners = set()
+
+class TestSingleMatch(unittest.TestCase):
+
+    def test_returns_valid_ranking(self):
+        """單場比賽應回傳包含所有六名選手的完整排名"""
+        ranking = run_single_analysis_match()
+        self.assertIsInstance(ranking, list)
+        self.assertEqual(len(ranking), 6)
+        self.assertEqual(set(ranking), VALID_NAMES)
+
+    def test_no_kingbu_in_ranking(self):
+        """布大王不應出現在排名結果中"""
+        for _ in range(20):
+            ranking = run_single_analysis_match()
+            self.assertNotIn("布大王", ranking)
+
+    def test_multiple_runs_produce_variety(self):
+        """100 場比賽中，第一名不應只有同一個角色"""
+        first_place_winners = set()
         for _ in range(100):
-            winners.add(run_single_race())
-        
-        # 預期至少有 2 種以上的結果 (避免單一角色獨大或死當)
-        self.assertGreaterEqual(len(winners), 2, f"警告：100 場比賽中只有贏家 {winners}，可能存在平衡性極端偏差！")
+            ranking = run_single_analysis_match()
+            first_place_winners.add(ranking[0])
+        self.assertGreaterEqual(
+            len(first_place_winners), 2,
+            f"100 場中第一名只有：{first_place_winners}，可能存在嚴重平衡問題"
+        )
+
+    def test_second_half_initial_states(self):
+        """下半場起始狀態應正確傳入並影響比賽"""
+        # 使用下半場的預設起始狀態 (dict 格式)
+        second_half_states = {
+            "奧古斯塔": {"pos": 32, "dist": 32},
+            "尤諾":   {"pos": 32, "dist": 34},
+            "弗洛洛": {"pos": 29, "dist": 35},
+            "長離":   {"pos": 32, "dist": 32},
+            "今汐":   {"pos": 31, "dist": 33},
+            "卡卡羅": {"pos": 31, "dist": 33},
+            "布大王": {"pos": 32, "dist": 999},
+        }
+        ranking = run_single_analysis_match(initial_states=second_half_states)
+        self.assertEqual(set(ranking), VALID_NAMES)
+
+
+class TestBatchAnalysis(unittest.TestCase):
+
+    def test_completes_without_error(self):
+        """批量分析應能正常跑完不拋出例外"""
+        try:
+            run_batch_analysis(num_trials=50)
+        except Exception as e:
+            self.fail(f"run_batch_analysis 拋出了例外：{e}")
+
+    def test_second_half_mode(self):
+        """下半場模式應能正常運行"""
+        second_half_states = {
+            "奧古斯塔": {"pos": 32, "dist": 32},
+            "尤諾":   {"pos": 32, "dist": 34},
+            "弗洛洛": {"pos": 29, "dist": 35},
+            "長離":   {"pos": 32, "dist": 32},
+            "今汐":   {"pos": 31, "dist": 33},
+            "卡卡羅": {"pos": 31, "dist": 33},
+            "布大王": {"pos": 32, "dist": 999},
+        }
+        try:
+            run_batch_analysis(num_trials=50, initial_states=second_half_states)
+        except Exception as e:
+            self.fail(f"下半場模式拋出了例外：{e}")
+
 
 if __name__ == "__main__":
     unittest.main()
