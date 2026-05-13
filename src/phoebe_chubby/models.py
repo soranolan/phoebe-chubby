@@ -5,7 +5,8 @@ from typing import List, Dict
 class Tuanzi:
     name: str
     position: int = 1
-    direction: int = 1 # 1 代表往 32 走，-1 代表往 1 走
+    remaining_distance: int = 32 # 剩餘里程數
+    direction: int = 1           # 1 代表往 32 走，-1 代表往 1 走
     has_triggered_special: bool = False
 
     def roll_dice(self) -> int:
@@ -22,37 +23,53 @@ class Tuanzi:
         """每回合開始前的準備動作"""
         pass
 
-    def move(self, steps: int, tiles: List[List['Tuanzi']]):
-        """執行物理位移，並帶動上方所有團子移動"""
+    def on_turn_end(self, tiles: List[List['Tuanzi']], forced_last_queue: List['Tuanzi'] = None, verbose: bool = True):
+        """回合結束後的特殊判定勾子"""
+        pass
+
+    def move(self, steps: int, tiles: List[List['Tuanzi']], verbose: bool = False):
+        """執行物理位移，扣除剩餘里程"""
         if steps == 0:
             return
         
         old_pos = self.position
-        new_pos = max(1, min(old_pos + steps, 32)) 
+        # 物理位置在 1-32 之間循環
+        # 計算方式：(當前位置 + 步數 - 1) % 32 + 1
+        new_pos = (old_pos + steps - 1) % 32 + 1
         
         if new_pos != old_pos:
             stack = tiles[old_pos]
             try:
                 idx = stack.index(self)
+                
+                # 1. 決定移動群組：僅在起點 (1 號位) 且剩餘距離是 32 倍數時不帶動他人
+                if old_pos == 1 and self.remaining_distance % 32 == 0:
+                    moving_group = [self]
+                    stack.remove(self)
+                else:
+                    moving_group = stack[idx:]
+                    tiles[old_pos] = stack[:idx]
+                
+                # 2. 決定放置方式
+                if self.insert_at_bottom:
+                    tiles[new_pos] = moving_group + tiles[new_pos]
+                else:
+                    tiles[new_pos].extend(moving_group)
+                
+                # 3. 更新群組中所有成員的狀態
+                for char in moving_group:
+                    # 檢查是否越過了 32 格（里程碑），如果是，重置技能
+                    # 比如從 剩餘 1 變成 剩餘 -1，代表跨過了終點/起點線
+                    old_milestone = (char.remaining_distance - 1) // 32
+                    char.remaining_distance -= steps
+                    new_milestone = (char.remaining_distance - 1) // 32
+                    
+                    if new_milestone < old_milestone:
+                        char.has_triggered_special = False
+                    
+                    char.position = (char.position + steps - 1) % 32 + 1
             except ValueError:
-                return 
-            
-            # 邏輯修正：如果在起點 (1 號位)，大家是平齊的，不帶動別人
-            if old_pos == 1:
-                moving_group = [self]
-                stack.remove(self)
-            else:
-                moving_group = stack[idx:]
-                tiles[old_pos] = stack[:idx]
-            
-            # 根據屬性決定是疊在上面，還是鑽到下面
-            if self.insert_at_bottom:
-                tiles[new_pos] = moving_group + tiles[new_pos]
-            else:
-                tiles[new_pos].extend(moving_group)
-            
-            for char in moving_group:
-                char.position = new_pos
+                pass
 
     def take_turn(self, tiles: List[List['Tuanzi']], all_rolls: Dict['Tuanzi', int]):
         """

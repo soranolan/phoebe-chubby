@@ -10,13 +10,36 @@ from .models import Tuanzi
 
 COURSE_LENGTH = 32
 
-def run_single_analysis_match():
-    """執行單場比賽並回傳所有參賽者的名次排序 (排除布大王)"""
-    characters = [
-        AugustaTuanzi(), YunoTuanzi(), PhroroTuanzi(),
-        ChangliTuanzi(), JinhsiTuanzi(), CalcharoTuanzi(),
-        KingBuTuanzi()
-    ]
+def run_single_analysis_match(initial_states=None):
+    """
+    執行單場里程制比賽。
+    :param initial_states: 初始狀態 Dict, 例如 {"長離": {"pos": 32, "dist": 32}, ...}
+    """
+    class_map = {
+        "奧古斯塔": AugustaTuanzi, "尤諾": YunoTuanzi, "弗洛洛": PhroroTuanzi,
+        "長離": ChangliTuanzi, "今汐": JinhsiTuanzi, "卡卡羅": CalcharoTuanzi,
+        "布大王": KingBuTuanzi
+    }
+
+    if initial_states:
+        characters = []
+        for name, state in initial_states.items():
+            char = class_map[name](start_pos=state["pos"])
+            char.remaining_distance = state["dist"]
+            # 如果起始位置就在中點之後，預設技能已用過
+            if char.position >= 16:
+                char.has_triggered_special = True
+            characters.append(char)
+    else:
+        # 預設上半場開局 (每人剩 32 格)
+        characters = [
+            AugustaTuanzi(), YunoTuanzi(), PhroroTuanzi(),
+            ChangliTuanzi(), JinhsiTuanzi(), CalcharoTuanzi(),
+            KingBuTuanzi()
+        ]
+        for char in characters:
+            char.remaining_distance = 32
+        
     random.shuffle(characters)
     
     tiles = [[] for _ in range(COURSE_LENGTH + 1)]
@@ -29,8 +52,8 @@ def run_single_analysis_match():
     forced_last_queue_this = []
     forced_last_queue_next = []
 
-    for round_num in range(1, 1000):
-        # 0. 準備階段 (靜默模式)
+    for round_num in range(1, 2000):
+        # 0. 準備階段
         for char in characters:
             char.prepare_round(tiles, forced_last_queue_next, verbose=False)
 
@@ -41,91 +64,90 @@ def run_single_analysis_match():
             characters = other_chars + forced_last_queue_this
         
         # 1. 擲骰與移動
-        for char in characters:
-            if isinstance(char, KingBuTuanzi) and round_num < 3:
-                char.is_skipping = True
-            elif isinstance(char, KingBuTuanzi):
-                char.is_skipping = False
-        
         round_rolls = {char: (char.roll_dice() if not char.is_skipping else 0) for char in characters}
         
         for char in list(characters):
             if char.is_skipping: continue
             
-            # 觸發中點特技 (靜默模式)
             if not char.has_triggered_special and char.position >= 16:
                 char.on_pass_midpoint(tiles, verbose=False)
                 char.has_triggered_special = True
 
             roll = round_rolls[char]
             steps = char.calculate_steps(roll, round_rolls, tiles)
+            char.move(steps, tiles)
             
-            # 執行移動 (靜默模式)
-            if isinstance(char, KingBuTuanzi):
-                char.move(steps, tiles, verbose=False)
-            else:
-                char.move(steps, tiles)
+            # 回合結束勾子 (例如長離的後行判定)
+            char.on_turn_end(tiles, forced_last_queue_next, verbose=False)
             
-        # 2. 判定勝負
-        winners = [c for c in tiles[COURSE_LENGTH] if c.direction == 1]
+        # 2. 判定勝負 (里程歸零)
+        winners = [c for c in characters if not isinstance(c, KingBuTuanzi) and c.remaining_distance <= 0]
         if winners:
-            # 根據 (位置, 堆疊索引) 對所有人進行最終排名
+            # 排名邏輯：剩餘里程越小越前，里程相同看堆疊
             def rank_key(c: Tuanzi):
                 try:
                     stack_idx = tiles[c.position].index(c)
                 except ValueError:
                     stack_idx = 0
-                return (c.position, stack_idx)
+                return (-c.remaining_distance, stack_idx)
             
             sorted_ranks = sorted(characters, key=rank_key, reverse=True)
-            # 剔除布大王，只回傳參賽者名次
             return [c.name for c in sorted_ranks if not isinstance(c, KingBuTuanzi)]
 
-        # 轉移隊列
         forced_last_queue_this = list(forced_last_queue_next)
         forced_last_queue_next = []
             
-    return [c.name for c in characters if not isinstance(c, KingBuTuanzi)] # 平局
+    return [c.name for c in characters if not isinstance(c, KingBuTuanzi)]
 
-def run_batch_analysis(num_trials=1000):
-    # 結構: { 角色名: { 名次(1-6): 次數 } }
+def run_batch_analysis(num_trials=1000, initial_states=None):
     char_names = ["奧古斯塔", "尤諾", "弗洛洛", "長離", "今汐", "卡卡羅"]
     stats = {name: {rank: 0 for rank in range(1, 7)} for name in char_names}
 
-    print(f"🚀 開始執行 {num_trials} 場純數據分析 (排除布大王)...")
+    mode_name = "上半場" if not initial_states else "下半場決賽"
+    print(f"🚀 開始執行 {num_trials} 場 {mode_name} 數據分析...")
     
     for i in range(1, num_trials + 1):
-        ranking = run_single_analysis_match()
+        ranking = run_single_analysis_match(initial_states=initial_states)
         for rank_idx, name in enumerate(ranking):
             rank = rank_idx + 1
             if name in stats:
-                stats[name][rank] = stats[name].get(rank, 0) + 1
+                stats[name][rank] += 1
         
         if i % 1000 == 0:
             print(f"⏳ 已完成 {i}/{num_trials} 場...", end='\r')
             sys.stdout.flush()
 
-    print("\n\n📊 === 最終平衡性分析報告 (排除布大王) ===")
+    print("\n\n📊 === 最終平衡性分析報告 ===")
     print(f"{'角色':<8} | {'1st':^5} | {'2nd':^5} | {'3rd':^5} | {'平均名次':^8}")
     print("-" * 50)
     
-    sorted_summary = []
+    summary = []
     for name, ranks in stats.items():
-        total_rank_sum = sum(rank * count for rank, count in ranks.items())
-        avg_rank = total_rank_sum / num_trials
-        sorted_summary.append((name, ranks, avg_rank))
+        avg = sum(r * c for r, c in ranks.items()) / num_trials
+        summary.append((name, ranks, avg))
     
-    # 根據平均名次排序 (越小越強)
-    sorted_summary.sort(key=lambda x: x[2])
-    
-    for name, ranks, avg in sorted_summary:
-        win_rate = (ranks[1] / num_trials) * 100
+    summary.sort(key=lambda x: x[2])
+    for name, ranks, avg in summary:
         print(f"{name:<10} | {ranks[1]:^5} | {ranks[2]:^5} | {ranks[3]:^5} | {avg:^10.2f}")
 
-    print("\n* 統計已排除布大王，僅針對 6 位參賽團子進行名次排定。")
-
 if __name__ == "__main__":
+    # 設定下半場起始狀態
+    second_half_states = {
+        "弗洛洛": {"pos": 29, "dist": 35},
+        "尤諾": {"pos": 30, "dist": 34},
+        "奧古斯塔": {"pos": 30, "dist": 34},
+        "卡卡羅": {"pos": 31, "dist": 33},
+        "今汐": {"pos": 31, "dist": 33},
+        "長離": {"pos": 32, "dist": 32},
+        "布大王": {"pos": 32, "dist": 999}
+    }
+    
+    # 預設執行 10000 場下半場統計
     trials = 10000
     if len(sys.argv) > 1:
-        trials = int(sys.argv[1])
-    run_batch_analysis(trials)
+        try:
+            trials = int(sys.argv[1])
+        except ValueError:
+            pass
+            
+    run_batch_analysis(trials, initial_states=second_half_states)

@@ -142,18 +142,24 @@ class KingBuTuanzi(Tuanzi):
         super().__init__("布大王", start_pos)
         self.direction = -1 # 往 0 走
         self.insert_at_bottom = True # 他永遠墊底
+        self.round_count = 0
     
     def roll_dice(self) -> int:
         return random.randint(1, 6) # 1~6 點
     
     def prepare_round(self, tiles: List[List[Tuanzi]], forced_last_queue: List[Tuanzi] = None, verbose: bool = True):
-        """布大王目前沒有每回合開始前的特殊邏輯"""
+        """布大王前兩回合固定休息"""
+        self.round_count += 1
+        if self.round_count <= 2:
+            self.is_skipping = True
+        else:
+            self.is_skipping = False
         super().prepare_round(tiles, forced_last_queue, verbose)
 
     def calculate_steps(self, roll: int, all_rolls: Dict[Tuanzi, int], tiles: List[List[Tuanzi]] = None) -> int:
         return -roll # 往起點走 (負向)
 
-    def move(self, steps: int, tiles: List[List[Tuanzi]], verbose: bool = True):
+    def move(self, steps: int, tiles: List[List[Tuanzi]], verbose: bool = False):
         """布大王特有的『掃街』位移：每經過一格就鏟起該格的所有人"""
         if steps >= 0:
             super().move(steps, tiles)
@@ -163,31 +169,20 @@ class KingBuTuanzi(Tuanzi):
         total_back_steps = abs(steps)
         for _ in range(total_back_steps):
             old_pos = self.position
-            new_pos = max(1, old_pos - 1) # 一次只退一格
+            # 呼叫基類移動一格，基類會處理所有的堆疊與圈數邏輯
+            super().move(-1, tiles)
             
-            if new_pos == old_pos:
+            # 如果位置沒變（撞牆），就停止
+            if self.position == old_pos:
                 break
-                
-            # 找到自己在舊格子的堆疊
-            stack = tiles[old_pos]
-            idx = stack.index(self)
-            moving_group = stack[idx:]
-            tiles[old_pos] = stack[:idx]
-            
-            # 關鍵：先移動到新格子，並鑽到新格子堆疊的最下面，把原本在那裡的人也『鏟』到背上
-            # 這樣新格子原本的人就會在 moving_group 的上方，一起被帶到下一格
-            tiles[new_pos] = moving_group + tiles[new_pos]
-            
-            for char in moving_group:
-                char.position = new_pos
             
         # 額外邏輯：『幽靈重置』
         # 如果布大王移動完後，發現自己後方（1 號位方向）已經沒人了
         # 也就是說他的 position 是全場最小的
-        all_positions = [c.position for c in tiles[new_pos] if c != self] # 同格的其他人
+        all_positions = [c.position for c in tiles[self.position] if c != self] # 同格的其他人
         # 還要看其他格子的所有人
         for p, stack in enumerate(tiles):
-            if p != new_pos:
+            if p != self.position:
                 all_positions.extend([c.position for c in stack])
         
         if all_positions and self.position < min(all_positions):
@@ -303,23 +298,29 @@ class PhroroTuanzi(Tuanzi):
 class ChangliTuanzi(Tuanzi):
     def __init__(self, start_pos: int = 1):
         super().__init__("長離", start_pos)
-        self.force_last_next = False
+        self.will_be_last_next_round = False
 
     def roll_dice(self) -> int:
         return random.randint(1, 3)
 
     def prepare_round(self, tiles: List[List[Tuanzi]], forced_last_queue: List[Tuanzi] = None, verbose: bool = True):
-        # 長離的 force_last 現在由引擎透過 queue 管理
+        # 回合開始時，如果上一回合標記了要後行，就加入隊列
+        if self.will_be_last_next_round:
+            if forced_last_queue is not None:
+                forced_last_queue.append(self)
+                if verbose:
+                    print(f"🕯️  {self.name} 展現『優雅後行』，本回合將最後行動。")
+            self.will_be_last_next_round = False
         self.force_last = False
-        
-        # 檢查本回合是否有人在自己下方
+
+    def on_turn_end(self, tiles: List[List[Tuanzi]], forced_last_queue: List[Tuanzi] = None, verbose: bool = True):
+        """走完後判定：如果腳下有人，機率性觸發下一回合後行"""
         stack = tiles[self.position]
         try:
             my_idx = stack.index(self)
-            if my_idx > 0: # 下方有其他人
+            if my_idx > 0: # 下方有其他人 (代表我疊在別人的背上)
                 if random.random() < 0.65:
-                    if forced_last_queue is not None:
-                        forced_last_queue.append(self)
+                    self.will_be_last_next_round = True
         except ValueError:
             pass
 
