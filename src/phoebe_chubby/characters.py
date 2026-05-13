@@ -138,9 +138,8 @@ class ColettaTuanzi(Tuanzi):
 
 # --- 布大王：逆行者 ---
 class KingBuTuanzi(Tuanzi):
-    def __init__(self):
-        super().__init__("布大王")
-        self.position = 32 # 從終點開始
+    def __init__(self, start_pos: int = 32):
+        super().__init__("布大王", start_pos)
         self.direction = -1 # 往 0 走
         self.insert_at_bottom = True # 他永遠墊底
     
@@ -201,8 +200,8 @@ class KingBuTuanzi(Tuanzi):
             
 # --- 奧古斯塔：堆疊頂端停頓 ---
 class AugustaTuanzi(Tuanzi):
-    def __init__(self):
-        super().__init__("奧古斯塔")
+    def __init__(self, start_pos: int = 1):
+        super().__init__("奧古斯塔", start_pos)
         self.force_last_next = False
 
     def roll_dice(self) -> int:
@@ -223,8 +222,8 @@ class AugustaTuanzi(Tuanzi):
 
 # --- 尤諾：空間引力 ---
 class YunoTuanzi(Tuanzi):
-    def __init__(self):
-        super().__init__("尤諾")
+    def __init__(self, start_pos: int = 1):
+        super().__init__("尤諾", start_pos)
 
     def roll_dice(self) -> int:
         return random.randint(1, 3)
@@ -279,8 +278,8 @@ class YunoTuanzi(Tuanzi):
 
 # --- 弗洛洛：底層爆發 ---
 class PhroroTuanzi(Tuanzi):
-    def __init__(self):
-        super().__init__("弗洛洛")
+    def __init__(self, start_pos: int = 1):
+        super().__init__("弗洛洛", start_pos)
         self.extra_steps = 0
 
     def roll_dice(self) -> int:
@@ -302,8 +301,8 @@ class PhroroTuanzi(Tuanzi):
 
 # --- 長離：優雅後行 ---
 class ChangliTuanzi(Tuanzi):
-    def __init__(self):
-        super().__init__("長離")
+    def __init__(self, start_pos: int = 1):
+        super().__init__("長離", start_pos)
         self.force_last_next = False
 
     def roll_dice(self) -> int:
@@ -326,8 +325,8 @@ class ChangliTuanzi(Tuanzi):
 
 # --- 今汐：乘風而上 ---
 class JinhsiTuanzi(Tuanzi):
-    def __init__(self):
-        super().__init__("今汐")
+    def __init__(self, start_pos: int = 1):
+        super().__init__("今汐", start_pos)
 
     def roll_dice(self) -> int:
         return random.randint(1, 3)
@@ -351,8 +350,8 @@ class JinhsiTuanzi(Tuanzi):
 
 # --- 卡卡羅：絕地追擊 ---
 class CalcharoTuanzi(Tuanzi):
-    def __init__(self):
-        super().__init__("卡卡羅")
+    def __init__(self, start_pos: int = 1):
+        super().__init__("卡卡羅", start_pos)
 
     def roll_dice(self) -> int:
         return random.randint(1, 3)
