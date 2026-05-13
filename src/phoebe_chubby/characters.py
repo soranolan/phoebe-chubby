@@ -203,17 +203,30 @@ class AugustaTuanzi(Tuanzi):
         return random.randint(1, 3)
 
     def prepare_round(self, tiles: List[List[Tuanzi]], forced_last_queue: List[Tuanzi] = None, verbose: bool = True):
-        # 奧古斯塔的 force_last 現在由引擎透過 queue 管理，這裡重置狀態
-        self.force_last = False 
-        
-        # 檢查本回合是否在【真正的堆疊】頂端 (人數必須 > 1)
+        # 回合開始只重置狀態
+        self.force_last = False
+        self.is_skipping = False
+
+    def calculate_steps(self, roll: int, all_rolls: Dict[Tuanzi, int], tiles: List[List[Tuanzi]] = None) -> int:
+        if tiles is None:
+            return roll
+            
         stack = tiles[self.position]
         if len(stack) > 1 and stack[-1] == self:
+            # 觸發休息
             self.is_skipping = True
+            # 我們在下一步的 move 裡處理日誌，或者在這裡標記
+            return 0
+        
+        return roll
+
+    def on_turn_end(self, tiles: List[List[Tuanzi]], forced_last_queue: List[Tuanzi] = None, verbose: bool = True):
+        # 如果是因為技能而休息，則下一回合墊後
+        if self.is_skipping:
             if forced_last_queue is not None:
                 forced_last_queue.append(self)
-        else:
-            self.is_skipping = False
+            if verbose:
+                print(f"🛌 {self.name} 覺得高處不勝寒，決定原地休息，下一回合將最後行動。")
 
 # --- 尤諾：空間引力 ---
 class YunoTuanzi(Tuanzi):
@@ -248,10 +261,18 @@ class YunoTuanzi(Tuanzi):
         if verbose:
             print(f"🌌 [極大技能觸發] {self.name}發動『全地圖引力』！！所有團子都被吸向中點！")
 
-        # 3. 從各地圖格子中移除這些人
+        # 3. 從各地圖格子中移除這些人，並同步里程
         for c in chars_behind + chars_ahead:
-            # 如果他們本來就在尤諾所在的格子，不要移除 (避免破壞 list 結構)
             if c.position != self.position:
+                # 計算位移差：(目標位置 - 原始位置)
+                diff = self.position - c.position
+                # 考慮 32 格循環位移修正 (取最短路徑吸過來)
+                if diff > 16: diff -= 32
+                if diff < -16: diff += 32
+                
+                # 同步里程：被吸往前里程減少，被吸往後里程增加
+                c.remaining_distance -= diff
+                
                 tiles[c.position].remove(c)
                 c.position = self.position
 
@@ -333,21 +354,39 @@ class JinhsiTuanzi(Tuanzi):
         return random.randint(1, 3)
 
     def prepare_round(self, tiles: List[List[Tuanzi]], forced_last_queue: List[Tuanzi] = None, verbose: bool = True):
-        # 檢查頭頂是否有人，且必須離開起跑點
-        if self.position <= 1:
-            return
-            
+        pass
+
+    def calculate_steps(self, roll: int, all_rolls: Dict[Tuanzi, int], tiles: List[List[Tuanzi]] = None) -> int:
+        if tiles is None or self.position <= 1:
+            return roll
+
         stack = tiles[self.position]
         try:
             my_idx = stack.index(self)
             if my_idx < len(stack) - 1: # 頭頂有人
-                if random.random() < 0.40:
-                    if verbose:
-                        print(f"🐉 {self.name} 發動『騰龍』，躍升至第 {self.position} 格的堆疊頂端！")
+                target_above = stack[my_idx + 1]
+                # 頭頂的人正在休息時，機率提升
+                trigger_chance = 0.80 if target_above.is_skipping else 0.40
+                if random.random() < trigger_chance:
                     stack.remove(self)
-                    stack.append(self)
+                    stack.append(self) # 躍升至頂端
+                    # 透過旗標讓 move() 能夠打印日誌
+                    self._dragon_jumped_over = target_above.name if target_above.is_skipping else None
+                    self._did_dragon_jump = True
         except ValueError:
             pass
+
+        return roll
+
+    def move(self, steps: int, tiles: List[List[Tuanzi]], verbose: bool = False):
+        if getattr(self, '_did_dragon_jump', False) and verbose:
+            msg = f"🐉 {self.name} 發動『騰龍』"
+            if getattr(self, '_dragon_jumped_over', None):
+                msg += f"（趁著 {self._dragon_jumped_over} 休息超車）"
+            print(f"{msg}，躍升至堆疊頂端！")
+            self._did_dragon_jump = False
+            self._dragon_jumped_over = None
+        super().move(steps, tiles, verbose)
 
 # --- 卡卡羅：絕地追擊 ---
 class CalcharoTuanzi(Tuanzi):

@@ -64,18 +64,22 @@ def run_single_analysis_match(initial_states=None):
             other_chars = [c for c in characters if c not in forced_last_queue_this]
             characters = other_chars + forced_last_queue_this
         
-        # 1. 擲骰與移動
-        round_rolls = {char: (char.roll_dice() if not char.is_skipping else 0) for char in characters}
+        # 所有人都擲骰，is_skipping 由 calculate_steps 動態決定
+        round_rolls = {char: char.roll_dice() for char in characters}
         
         for char in list(characters):
-            if char.is_skipping: continue
-            
             if not char.has_triggered_special and char.position >= 16:
                 char.on_pass_midpoint(tiles, verbose=False)
                 char.has_triggered_special = True
 
             roll = round_rolls[char]
             steps = char.calculate_steps(roll, round_rolls, tiles)
+
+            # is_skipping 由 calculate_steps 動態決定 (如奧古斯塔的技能)
+            if char.is_skipping:
+                char.on_turn_end(tiles, forced_last_queue_next, verbose=False)
+                continue
+
             char.move(steps, tiles)
             
             # 回合結束勾子 (例如長離的後行判定)

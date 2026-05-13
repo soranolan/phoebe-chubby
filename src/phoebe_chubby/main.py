@@ -77,17 +77,11 @@ def run_simulation(max_rounds=999):
 
         round_rolls = {}
         for char in characters:
-            if char.is_skipping:
-                round_rolls[char] = 0
-                print(f"😴 {char.name} 本回合休息中，待在第 {char.position} 格 (剩 {char.remaining_distance})。")
-            else:
+            # 所有人都擲骰，is_skipping 由 calculate_steps 動態決定
                 roll = char.roll_dice()
                 round_rolls[char] = roll
 
         for char in list(characters):
-            if char.is_skipping:
-                continue
-            
             # 特技觸發
             if not char.has_triggered_special and char.position >= 16:
                 char.on_pass_midpoint(tiles)
@@ -96,6 +90,12 @@ def run_simulation(max_rounds=999):
             roll = round_rolls[char]
             steps = char.calculate_steps(roll, round_rolls, tiles)
             
+            # is_skipping 由 calculate_steps 動態決定 (如奧古斯塔的技能)
+            if char.is_skipping:
+                print(f"😴 {char.name} 本回合休息，待在第 {char.position} 格 (剩 {char.remaining_distance})。")
+                char.on_turn_end(tiles, forced_last_queue_next, verbose=True)
+                continue
+
             old_dist = char.remaining_distance
             old_pos = char.position
             char.move(steps, tiles, verbose=True)
