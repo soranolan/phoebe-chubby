@@ -82,8 +82,8 @@ def run_simulation(max_rounds=999):
                 round_rolls[char] = roll
 
         for char in list(characters):
-            # 特技觸發
-            if not char.has_triggered_special and char.position >= 16:
+            # 特技觸發：剩餘里程 ≤ 16 代表已跑超過一半
+            if not char.has_triggered_special and char.remaining_distance <= 16:
                 char.on_pass_midpoint(tiles)
                 char.has_triggered_special = True
 

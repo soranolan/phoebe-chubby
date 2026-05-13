@@ -68,7 +68,8 @@ def run_single_analysis_match(initial_states=None):
         round_rolls = {char: char.roll_dice() for char in characters}
         
         for char in list(characters):
-            if not char.has_triggered_special and char.position >= 16:
+            # 特技觸發：剩餘里程 ≤ 16 代表已跑超過一半
+            if not char.has_triggered_special and char.remaining_distance <= 16:
                 char.on_pass_midpoint(tiles, verbose=False)
                 char.has_triggered_special = True
 
