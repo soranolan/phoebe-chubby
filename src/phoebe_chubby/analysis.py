@@ -1,5 +1,6 @@
 import random
 import sys
+import time
 from typing import List, Dict
 from .characters import (
     AugustaTuanzi, YunoTuanzi, PhroroTuanzi,
@@ -99,6 +100,8 @@ def run_single_analysis_match(initial_states=None):
             
     return [c.name for c in characters if not isinstance(c, KingBuTuanzi)]
 
+
+
 def run_batch_analysis(num_trials=1000, initial_states=None):
     char_names = ["奧古斯塔", "尤諾", "弗洛洛", "長離", "今汐", "卡卡羅"]
     stats = {name: {rank: 0 for rank in range(1, 7)} for name in char_names}
@@ -106,6 +109,7 @@ def run_batch_analysis(num_trials=1000, initial_states=None):
     mode_name = "上半場" if not initial_states else "下半場決賽"
     print(f"🚀 開始執行 {num_trials} 場 {mode_name} 數據分析...")
     
+    start_time = time.time()
     for i in range(1, num_trials + 1):
         ranking = run_single_analysis_match(initial_states=initial_states)
         for rank_idx, name in enumerate(ranking):
@@ -117,7 +121,10 @@ def run_batch_analysis(num_trials=1000, initial_states=None):
             print(f"⏳ 已完成 {i}/{num_trials} 場...", end='\r')
             sys.stdout.flush()
 
-    print("\n\n📊 === 最終平衡性分析報告 ===")
+    end_time = time.time()
+    duration = end_time - start_time
+
+    print(f"\n\n📊 === 最終平衡性分析報告 (耗時: {duration:.2f} 秒) ===")
     print(f"{'角色':<8} | {'1st':^5} | {'2nd':^5} | {'3rd':^5} | {'平均名次':^8}")
     print("-" * 50)
     
