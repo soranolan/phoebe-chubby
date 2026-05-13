@@ -233,8 +233,8 @@ class YunoTuanzi(Tuanzi):
         super().prepare_round(tiles, forced_last_queue, verbose)
 
     def on_pass_midpoint(self, tiles: List[List[Tuanzi]], verbose: bool = True):
-        """當經過中點時，拉近排名前後的整個堆疊"""
-        # 1. 取得全局排名
+        """當經過中點時，發動【全地圖吸引】：將所有參賽者吸至身邊"""
+        # 1. 取得全局排名 (底層 -> 頂層)
         ranking = []
         for stack in tiles:
             ranking.extend(stack)
@@ -244,51 +244,38 @@ class YunoTuanzi(Tuanzi):
         except ValueError:
             return
 
-        char_behind = ranking[my_idx - 1] if my_idx > 0 else None
-        char_ahead = ranking[my_idx + 1] if my_idx < len(ranking) - 1 else None
+        # 2. 分類：誰在我前面，誰在我後面 (排除自己和布大王)
+        chars_behind = [c for c in ranking[:my_idx] if not isinstance(c, KingBuTuanzi)]
+        chars_ahead = [c for c in ranking[my_idx+1:] if not isinstance(c, KingBuTuanzi)]
 
-        # 排除布大王
-        if isinstance(char_behind, KingBuTuanzi): char_behind = None
-        if isinstance(char_ahead, KingBuTuanzi): char_ahead = None
-
-        if not char_behind and not char_ahead:
+        if not chars_behind and not chars_ahead:
             return
 
         if verbose:
-            print(f"🌌 [技能觸發] 尤諾發動『空間引力』，開始搬運鄰近堆疊！")
+            print(f"🌌 [極大技能觸發] {self.name}發動『全地圖引力』！！所有團子都被吸向中點！")
 
-        # 2. 處理後方堆疊 (排名落後者)
-        if char_behind and char_behind.position != self.position:
-            old_pos = char_behind.position
-            stack_b = tiles[old_pos]
-            idx_b = stack_b.index(char_behind)
-            group_b = stack_b[idx_b:] # 抓走他及其上方所有人
-            tiles[old_pos] = stack_b[:idx_b]
-            
-            # 插入到尤諾下方
-            stack_y = tiles[self.position]
-            idx_y = stack_y.index(self)
-            tiles[self.position] = stack_y[:idx_y] + group_b + stack_y[idx_y:]
-            
-            for c in group_b: c.position = self.position
-            if verbose:
-                print(f"  - 將後方 {char_behind.name} 的堆疊 (共 {len(group_b)} 人) 從第 {old_pos} 格吸至身下")
+        # 3. 從各地圖格子中移除這些人
+        for c in chars_behind + chars_ahead:
+            # 如果他們本來就在尤諾所在的格子，不要移除 (避免破壞 list 結構)
+            if c.position != self.position:
+                tiles[c.position].remove(c)
+                c.position = self.position
 
-        # 3. 處理前方堆疊 (排名領先者)
-        if char_ahead and char_ahead.position != self.position:
-            # 注意：如果剛才搬運後方堆疊時尤諾的格子發生了變化，這裡需要重新定位尤諾 (雖然 position 沒變但 stack 變了)
-            old_pos = char_ahead.position
-            stack_a = tiles[old_pos]
-            idx_a = stack_a.index(char_ahead)
-            group_a = stack_a[idx_a:] # 抓走他及其上方所有人
-            tiles[old_pos] = stack_a[:idx_a]
-            
-            # 插入到尤諾格子的最上方 (維持領先排名)
-            tiles[self.position].extend(group_a)
-            
-            for c in group_a: c.position = self.position
-            if verbose:
-                print(f"  - 將前方 {char_ahead.name} 的堆疊 (共 {len(group_a)} 人) 從第 {old_pos} 格吸至頭頂")
+        # 4. 重新組裝尤諾所在的格子
+        # 先找到尤諾格原本的布大王 (如果有)
+        bu_in_my_tile = [c for c in tiles[self.position] if isinstance(c, KingBuTuanzi)]
+        
+        # 新堆疊 = [原本排名在後的人] + [尤諾] + [原本排名在前的人]
+        new_stack = chars_behind + [self] + chars_ahead
+        
+        # 重新放回格子 (布大王依然在最底層，如果有)
+        tiles[self.position] = bu_in_my_tile + new_stack
+        
+        if verbose:
+            if chars_behind:
+                print(f"  - 後方 {len(chars_behind)} 名團子被吸至身下")
+            if chars_ahead:
+                print(f"  - 前方 {len(chars_ahead)} 名團子被吸至頭頂")
 
 # --- 弗洛洛：底層爆發 ---
 class PhroroTuanzi(Tuanzi):
