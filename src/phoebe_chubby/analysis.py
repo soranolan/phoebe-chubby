@@ -5,7 +5,8 @@ from typing import List, Dict
 from .characters import (
     AugustaTuanzi, YunoTuanzi, PhroroTuanzi,
     ChangliTuanzi, JinhsiTuanzi, CalcharoTuanzi,
-    KingBuTuanzi
+    KingBuTuanzi, LucaixTuanzi, DaniaTuanzi,
+    ChisakiTuanzi, ColettaTuanzi
 )
 from .models import Tuanzi
 
@@ -17,8 +18,8 @@ def run_single_analysis_match(initial_states=None):
     :param initial_states: 初始狀態 Dict, 例如 {"長離": {"pos": 32, "dist": 32}, ...}
     """
     class_map = {
-        "奧古斯塔": AugustaTuanzi, "尤諾": YunoTuanzi, "弗洛洛": PhroroTuanzi,
-        "長離": ChangliTuanzi, "今汐": JinhsiTuanzi, "卡卡羅": CalcharoTuanzi,
+        "達妮婭": DaniaTuanzi, "陸赫斯": LucaixTuanzi, "千咲": ChisakiTuanzi,
+        "珂萊塔": ColettaTuanzi, "奧古斯塔": AugustaTuanzi, "長離": ChangliTuanzi,
         "布大王": KingBuTuanzi
     }
 
@@ -34,8 +35,8 @@ def run_single_analysis_match(initial_states=None):
     else:
         # 預設上半場開局 (每人剩 32 格)
         characters = [
-            AugustaTuanzi(), YunoTuanzi(), PhroroTuanzi(),
-            ChangliTuanzi(), JinhsiTuanzi(), CalcharoTuanzi(),
+            DaniaTuanzi(), LucaixTuanzi(), ChisakiTuanzi(),
+            ColettaTuanzi(), AugustaTuanzi(), ChangliTuanzi(),
             KingBuTuanzi()
         ]
         for char in characters:
@@ -49,6 +50,11 @@ def run_single_analysis_match(initial_states=None):
             tiles[char.position].insert(0, char)
         else:
             tiles[char.position].append(char)
+
+    TILE_EFFECTS = {
+        3: "f1", 6: "rift", 10: "b1", 11: "f1",
+        16: "f1", 20: "rift", 23: "f1", 28: "b1"
+    }
 
     forced_last_queue_this = []
     forced_last_queue_next = []
@@ -83,6 +89,20 @@ def run_single_analysis_match(initial_states=None):
 
             char.move(steps, tiles)
             
+            effect = TILE_EFFECTS.get(char.position)
+            if effect:
+                bonus = char.tile_effect_bonus(effect)
+                if effect == "f1":
+                    total_steps = 1 + bonus
+                    if total_steps != 0:
+                        char.move(total_steps, tiles)
+                elif effect == "b1":
+                    total_steps = -1 + bonus
+                    if total_steps != 0:
+                        char.move(total_steps, tiles)
+                elif effect == "rift":
+                    random.shuffle(tiles[char.position])
+            
             # 回合結束勾子 (例如長離的後行判定)
             char.on_turn_end(tiles, forced_last_queue_next, verbose=False)
             
@@ -108,8 +128,13 @@ def run_single_analysis_match(initial_states=None):
 
 
 def run_batch_analysis(num_trials=1000, initial_states=None):
-    char_names = ["奧古斯塔", "尤諾", "弗洛洛", "長離", "今汐", "卡卡羅"]
-    stats = {name: {rank: 0 for rank in range(1, 7)} for name in char_names}
+    if initial_states:
+        char_names = [name for name in initial_states.keys() if name != "布大王"]
+    else:
+        # 預設名單
+        char_names = ["達妮婭", "陸赫斯", "千咲", "珂萊塔", "奧古斯塔", "長離"]
+
+    stats = {name: {rank: 0 for rank in range(1, len(char_names) + 1)} for name in char_names}
 
     mode_name = "上半場" if not initial_states else "下半場決賽"
     print(f"🚀 開始執行 {num_trials} 場 {mode_name} 數據分析...")
@@ -145,12 +170,12 @@ def run_batch_analysis(num_trials=1000, initial_states=None):
 if __name__ == "__main__":
     # 設定下半場起始狀態
     second_half_states = {
-        "弗洛洛": {"pos": 29, "dist": 35},
-        "尤諾": {"pos": 30, "dist": 34},
-        "奧古斯塔": {"pos": 30, "dist": 34},
-        "卡卡羅": {"pos": 31, "dist": 33},
-        "今汐": {"pos": 31, "dist": 33},
-        "長離": {"pos": 32, "dist": 32},
+        "達妮婭": {"pos": 1, "dist": 33},
+        "陸赫斯": {"pos": 1, "dist": 32},
+        "千咲":   {"pos": 1, "dist": 35},
+        "珂萊塔": {"pos": 1, "dist": 34},
+        "奧古斯塔": {"pos": 1, "dist": 32},
+        "長離":   {"pos": 1, "dist": 32},
         "布大王": {"pos": 32, "dist": 999}
     }
     

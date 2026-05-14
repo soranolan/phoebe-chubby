@@ -27,6 +27,10 @@ class Tuanzi:
         """回合結束後的特殊判定勾子"""
         pass
 
+    def tile_effect_bonus(self, effect: str) -> int:
+        """地圖特效觸發時的額外步數加成（預設 0）"""
+        return 0
+
     def move(self, steps: int, tiles: List[List['Tuanzi']], verbose: bool = False):
         """執行物理位移，扣除剩餘里程"""
         if steps == 0:

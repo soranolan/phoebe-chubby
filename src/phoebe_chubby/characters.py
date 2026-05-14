@@ -4,15 +4,15 @@ from typing import List, Dict
 
 # --- 千咲：最小點數加成 ---
 class ChisakiTuanzi(Tuanzi):
-    def __init__(self):
-        super().__init__("千咲")
+    def __init__(self, start_pos=1):
+        super().__init__("千咲", start_pos)
     
     def roll_dice(self) -> int:
         return random.randint(1, 3)
     
-    def prepare_round(self, tiles: List[List[Tuanzi]], forced_last_queue: List[Tuanzi] = None):
+    def prepare_round(self, tiles: List[List[Tuanzi]], forced_last_queue: List[Tuanzi] = None, verbose: bool = True):
         """千咲目前沒有每回合開始前的特殊邏輯"""
-        super().prepare_round(tiles)
+        super().prepare_round(tiles, forced_last_queue, verbose)
     
     def calculate_steps(self, roll: int, all_rolls: Dict[Tuanzi, int], tiles: List[List[Tuanzi]] = None) -> int:
         min_roll = min(all_rolls.values())
@@ -121,15 +121,15 @@ class ShorekeeperTuanzi(Tuanzi):
 
 # --- 珂萊塔：28% 機率雙倍 ---
 class ColettaTuanzi(Tuanzi):
-    def __init__(self):
-        super().__init__("珂萊塔")
+    def __init__(self, start_pos=1):
+        super().__init__("珂萊塔", start_pos)
 
     def roll_dice(self) -> int:
         return random.randint(1, 3)
 
-    def prepare_round(self, tiles: List[List[Tuanzi]], forced_last_queue: List[Tuanzi] = None):
+    def prepare_round(self, tiles: List[List[Tuanzi]], forced_last_queue: List[Tuanzi] = None, verbose: bool = True):
         """珂萊塔目前沒有每回合開始前的特殊邏輯"""
-        super().prepare_round(tiles)
+        super().prepare_round(tiles, forced_last_queue, verbose)
 
     def calculate_steps(self, roll: int, all_rolls: Dict[Tuanzi, int], tiles: List[List[Tuanzi]] = None) -> int:
         if random.random() < 0.28:
@@ -414,6 +414,35 @@ class CalcharoTuanzi(Tuanzi):
                 return roll + 3
         return roll
 
+class LucaixTuanzi(Tuanzi):
+    def __init__(self, start_pos=1):
+        super().__init__("陸赫斯", start_pos)
+
+    def roll_dice(self) -> int:
+        return random.randint(1, 3)
+
+    def tile_effect_bonus(self, effect: str) -> int:
+        if effect == 'f1':
+            return 3
+        elif effect == 'b1':
+            return -1
+        return 0
+
+class DaniaTuanzi(Tuanzi):
+    def __init__(self, start_pos=1):
+        super().__init__("達妮婭", start_pos)
+        self.last_roll = None
+
+    def roll_dice(self) -> int:
+        return random.randint(1, 3)
+        
+    def calculate_steps(self, roll: int, all_rolls: Dict[Tuanzi, int], tiles: List[List[Tuanzi]] = None) -> int:
+        steps = roll
+        if self.last_roll is not None and roll == self.last_roll:
+            steps += 2
+        self.last_roll = roll
+        return steps
+
 def get_all_characters():
     return [
         ChisakiTuanzi(),
@@ -428,5 +457,7 @@ def get_all_characters():
         PhroroTuanzi(),
         ChangliTuanzi(),
         JinhsiTuanzi(),
-        CalcharoTuanzi()
+        CalcharoTuanzi(),
+        LucaixTuanzi(),
+        DaniaTuanzi()
     ]

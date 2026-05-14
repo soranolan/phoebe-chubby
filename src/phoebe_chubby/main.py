@@ -2,38 +2,35 @@ import random
 from .characters import (
     AugustaTuanzi, YunoTuanzi, PhroroTuanzi,
     ChangliTuanzi, JinhsiTuanzi, CalcharoTuanzi,
-    KingBuTuanzi
+    KingBuTuanzi, LucaixTuanzi, DaniaTuanzi,
+    ChisakiTuanzi, ColettaTuanzi
 )
 
 COURSE_LENGTH = 32
 
 def run_simulation(max_rounds=999):
-    # --- 定義下半場里程數 ---
-    # 按照名次設定剩餘里程，第一名剩 32，後面依序增加
+    # --- 定義上半場起始狀態 ---
     characters_in_order = [
-        PhroroTuanzi(start_pos=29),   # 第六名，落後 3 格 -> 32 + 3 = 35
-        YunoTuanzi(start_pos=30),     # 第五名，落後 2 格 -> 32 + 2 = 34
-        AugustaTuanzi(start_pos=30),  # 第四名，落後 2 格 -> 32 + 2 = 34
-        CalcharoTuanzi(start_pos=31), # 第三名，落後 1 格 -> 32 + 1 = 33
-        JinhsiTuanzi(start_pos=31),   # 第二名，落後 1 格 -> 32 + 1 = 33
-        ChangliTuanzi(start_pos=32),  # 第一名，基準 -> 32
-        KingBuTuanzi(start_pos=32)    # 布大王
+        DaniaTuanzi(start_pos=1),
+        LucaixTuanzi(start_pos=1),
+        ChisakiTuanzi(start_pos=1),
+        ColettaTuanzi(start_pos=1),
+        AugustaTuanzi(start_pos=1),
+        ChangliTuanzi(start_pos=1),
+        KingBuTuanzi(start_pos=32)
     ]
     
-    # 初始化里程數
+    # 上半場所有人里程皆為 32，布大王不需跑完
     dist_map = {
-        "長離": 32, "今汐": 33, "卡卡羅": 33,
-        "奧古斯塔": 34, "尤諾": 34, "弗洛洛": 35,
-        "布大王": 999 # 布大王不用跑完
+        "達妮婭": 32, "陸赫斯": 32, "千咲": 32,
+        "珂萊塔": 32, "奧古斯塔": 32, "長離": 32,
+        "布大王": 999
     }
 
     tiles = [[] for _ in range(COURSE_LENGTH + 1)]
     for char in characters_in_order:
         char.remaining_distance = dist_map.get(char.name, 32)
-            
-        # 如果起始位置就在中點 (16) 之後，預設這圈的技能已用過
-        if char.position >= 16:
-            char.has_triggered_special = True
+        # 上半場從 1 號位出發，技能尚未觸發
             
         # 放置團子
         if char.insert_at_bottom:
@@ -44,7 +41,7 @@ def run_simulation(max_rounds=999):
     characters = list(characters_in_order)
     random.shuffle(characters)
 
-    print("=== 鳴潮小團快跑 模擬開始 (下半場：里程倒數模式) ===")
+    print("=== 鳴潮小團快跑 模擬開始 (上半場) ===")
     print("📢 獲勝條件：將剩餘里程扣至 0 或以下者獲勝！")
     
     TILE_EFFECTS = {
@@ -110,12 +107,18 @@ def run_simulation(max_rounds=999):
 
             effect = TILE_EFFECTS.get(char.position)
             if effect:
+                bonus = char.tile_effect_bonus(effect)
+                
                 if effect == "f1":
-                    print(f"🚀 {char.name} 踩到加速格！額外前進 1 格。")
-                    char.move(1, tiles, verbose=True)
+                    total_steps = 1 + bonus
+                    print(f"🚀 {char.name} 踩到加速格！額外前進 {total_steps} 格。")
+                    if total_steps != 0:
+                        char.move(total_steps, tiles, verbose=True)
                 elif effect == "b1":
-                    print(f"⚠️ {char.name} 踩到陷阱格！倒退 1 格。")
-                    char.move(-1, tiles, verbose=True)
+                    total_steps = -1 + bonus
+                    print(f"⚠️ {char.name} 踩到陷阱格！倒退 {abs(total_steps)} 格。")
+                    if total_steps != 0:
+                        char.move(total_steps, tiles, verbose=True)
                 elif effect == "rift":
                     print(f"🌀 {char.name} 觸發空間裂隙！第 {char.position} 格順序重組為: ", end="")
                     random.shuffle(tiles[char.position])
