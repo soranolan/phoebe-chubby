@@ -18,9 +18,15 @@ class Tuanzi:
     insert_at_bottom: bool = False # 是否強制鑽到堆疊最下面
     is_skipping: bool = False      # 本回合是否跳過行動
     force_last: bool = False       # 本回合是否強制最後一個行動
+    step_debuff: int = 0           # 本回合受到的步數減免
 
     def prepare_round(self, tiles: List[List['Tuanzi']], forced_last_queue: List['Tuanzi'] = None, verbose: bool = True):
         """每回合開始前的準備動作"""
+        self.step_debuff = 0
+        pass
+
+    def after_rolls(self, round_rolls: Dict['Tuanzi', int], tiles: List[List['Tuanzi']], verbose: bool = False):
+        """每回合擲骰子後，開始移動前的勾子"""
         pass
 
     def on_turn_end(self, tiles: List[List['Tuanzi']], forced_last_queue: List['Tuanzi'] = None, verbose: bool = True):

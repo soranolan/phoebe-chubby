@@ -6,7 +6,8 @@ from .characters import (
     AugustaTuanzi, YunoTuanzi, PhroroTuanzi,
     ChangliTuanzi, JinhsiTuanzi, CalcharoTuanzi,
     KingBuTuanzi, LucaixTuanzi, DaniaTuanzi,
-    ChisakiTuanzi, ColettaTuanzi
+    ChisakiTuanzi, ColettaTuanzi, SigelicaTuanzi,
+    KatishiaTuanzi, LinneTuanzi
 )
 from .models import Tuanzi
 
@@ -18,9 +19,9 @@ def run_single_analysis_match(initial_states=None):
     :param initial_states: 初始狀態 Dict, 例如 {"長離": {"pos": 32, "dist": 32}, ...}
     """
     class_map = {
-        "達妮婭": DaniaTuanzi, "陸赫斯": LucaixTuanzi, "千咲": ChisakiTuanzi,
-        "珂萊塔": ColettaTuanzi, "奧古斯塔": AugustaTuanzi, "長離": ChangliTuanzi,
-        "布大王": KingBuTuanzi
+        "弗洛洛": PhroroTuanzi, "西格莉卡": SigelicaTuanzi,
+        "尤諾": YunoTuanzi, "卡卡羅": CalcharoTuanzi, "琳奈": LinneTuanzi,
+        "卡提希婭": KatishiaTuanzi, "布大王": KingBuTuanzi
     }
 
     if initial_states:
@@ -35,9 +36,9 @@ def run_single_analysis_match(initial_states=None):
     else:
         # 預設上半場開局 (每人剩 32 格)
         characters = [
-            DaniaTuanzi(), LucaixTuanzi(), ChisakiTuanzi(),
-            ColettaTuanzi(), AugustaTuanzi(), ChangliTuanzi(),
-            KingBuTuanzi()
+            PhroroTuanzi(), SigelicaTuanzi(),
+            YunoTuanzi(), CalcharoTuanzi(), LinneTuanzi(),
+            KatishiaTuanzi(), KingBuTuanzi()
         ]
         for char in characters:
             char.remaining_distance = 32
@@ -70,8 +71,11 @@ def run_single_analysis_match(initial_states=None):
             other_chars = [c for c in characters if c not in forced_last_queue_this]
             characters = other_chars + forced_last_queue_this
         
-        # 所有人都擲骰，is_skipping 由 calculate_steps 動態決定
         round_rolls = {char: char.roll_dice() for char in characters}
+        
+        if round_num > 1:
+            for char in list(characters):
+                char.after_rolls(round_rolls, tiles, verbose=False)
         
         for char in list(characters):
             # 特技觸發：剩餘里程 ≤ 16 代表已跑超過一半
@@ -80,7 +84,11 @@ def run_single_analysis_match(initial_states=None):
                 char.has_triggered_special = True
 
             roll = round_rolls[char]
-            steps = char.calculate_steps(roll, round_rolls, tiles)
+            calculated_steps = char.calculate_steps(roll, round_rolls, tiles)
+            
+            steps = calculated_steps - char.step_debuff
+            if steps < calculated_steps and char.step_debuff > 0:
+                steps = max(1, steps)
 
             # is_skipping 由 calculate_steps 動態決定 (如奧古斯塔的技能)
             if char.is_skipping:
@@ -132,7 +140,7 @@ def run_batch_analysis(num_trials=1000, initial_states=None):
         char_names = [name for name in initial_states.keys() if name != "布大王"]
     else:
         # 預設名單
-        char_names = ["達妮婭", "陸赫斯", "千咲", "珂萊塔", "奧古斯塔", "長離"]
+        char_names = ["弗洛洛", "西格莉卡", "尤諾", "卡卡羅", "琳奈", "卡提希婭"]
 
     stats = {name: {rank: 0 for rank in range(1, len(char_names) + 1)} for name in char_names}
 
@@ -170,12 +178,12 @@ def run_batch_analysis(num_trials=1000, initial_states=None):
 if __name__ == "__main__":
     # 設定下半場起始狀態
     second_half_states = {
-        "達妮婭": {"pos": 1, "dist": 33},
-        "陸赫斯": {"pos": 1, "dist": 32},
-        "千咲":   {"pos": 1, "dist": 35},
-        "珂萊塔": {"pos": 1, "dist": 34},
-        "奧古斯塔": {"pos": 1, "dist": 32},
-        "長離":   {"pos": 1, "dist": 32},
+        "弗洛洛": {"pos": 1, "dist": 32},
+        "西格莉卡": {"pos": 1, "dist": 32},
+        "尤諾": {"pos": 1, "dist": 32},
+        "卡卡羅": {"pos": 1, "dist": 32},
+        "琳奈": {"pos": 1, "dist": 32},
+        "卡提希婭": {"pos": 1, "dist": 32},
         "布大王": {"pos": 32, "dist": 999}
     }
     

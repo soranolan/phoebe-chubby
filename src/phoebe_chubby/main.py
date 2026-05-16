@@ -3,7 +3,8 @@ from .characters import (
     AugustaTuanzi, YunoTuanzi, PhroroTuanzi,
     ChangliTuanzi, JinhsiTuanzi, CalcharoTuanzi,
     KingBuTuanzi, LucaixTuanzi, DaniaTuanzi,
-    ChisakiTuanzi, ColettaTuanzi
+    ChisakiTuanzi, ColettaTuanzi, SigelicaTuanzi,
+    KatishiaTuanzi, LinneTuanzi
 )
 
 COURSE_LENGTH = 32
@@ -11,19 +12,19 @@ COURSE_LENGTH = 32
 def run_simulation(max_rounds=999):
     # --- 定義上半場起始狀態 ---
     characters_in_order = [
-        DaniaTuanzi(start_pos=1),
-        LucaixTuanzi(start_pos=1),
-        ChisakiTuanzi(start_pos=1),
-        ColettaTuanzi(start_pos=1),
-        AugustaTuanzi(start_pos=1),
-        ChangliTuanzi(start_pos=1),
+        PhroroTuanzi(start_pos=1),
+        SigelicaTuanzi(start_pos=1),
+        YunoTuanzi(start_pos=1),
+        CalcharoTuanzi(start_pos=1),
+        LinneTuanzi(start_pos=1),
+        KatishiaTuanzi(start_pos=1),
         KingBuTuanzi(start_pos=32)
     ]
     
     # 上半場所有人里程皆為 32，布大王不需跑完
     dist_map = {
-        "達妮婭": 32, "陸赫斯": 32, "千咲": 32,
-        "珂萊塔": 32, "奧古斯塔": 32, "長離": 32,
+        "弗洛洛": 32, "西格莉卡": 32, "尤諾": 32, "卡卡羅": 32,
+        "琳奈": 32, "卡提希婭": 32,
         "布大王": 999
     }
 
@@ -74,9 +75,12 @@ def run_simulation(max_rounds=999):
 
         round_rolls = {}
         for char in characters:
-            # 所有人都擲骰，is_skipping 由 calculate_steps 動態決定
-                roll = char.roll_dice()
-                round_rolls[char] = roll
+            round_rolls[char] = char.roll_dice()
+            
+        # 呼叫擲骰後的勾子 (例如西格莉卡標記排名較高者)
+        if round_num > 1: # 首輪僅決定順序不發動
+            for char in list(characters):
+                char.after_rolls(round_rolls, tiles, verbose=True)
 
         for char in list(characters):
             # 特技觸發：剩餘里程 ≤ 16 代表已跑超過一半
@@ -85,7 +89,11 @@ def run_simulation(max_rounds=999):
                 char.has_triggered_special = True
 
             roll = round_rolls[char]
-            steps = char.calculate_steps(roll, round_rolls, tiles)
+            calculated_steps = char.calculate_steps(roll, round_rolls, tiles)
+            
+            steps = calculated_steps - char.step_debuff
+            if steps < calculated_steps and char.step_debuff > 0:
+                steps = max(1, steps)
             
             # is_skipping 由 calculate_steps 動態決定 (如奧古斯塔的技能)
             if char.is_skipping:

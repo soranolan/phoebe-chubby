@@ -41,15 +41,15 @@ class MorningTuanzi(Tuanzi):
 
 # --- 琳奈：60% 雙倍, 20% 停頓, 20% 正常 ---
 class LinneTuanzi(Tuanzi):
-    def __init__(self):
-        super().__init__("琳奈")
+    def __init__(self, start_pos=1):
+        super().__init__("琳奈", start_pos)
 
     def roll_dice(self) -> int:
         return random.randint(1, 3)
 
-    def prepare_round(self, tiles: List[List[Tuanzi]], forced_last_queue: List[Tuanzi] = None):
+    def prepare_round(self, tiles: List[List[Tuanzi]], forced_last_queue: List[Tuanzi] = None, verbose: bool = True):
         """琳奈目前沒有每回合開始前的特殊邏輯"""
-        super().prepare_round(tiles)
+        super().prepare_round(tiles, forced_last_queue, verbose)
 
     def calculate_steps(self, roll: int, all_rolls: Dict[Tuanzi, int], tiles: List[List[Tuanzi]] = None) -> int:
         p = random.random()
@@ -443,6 +443,84 @@ class DaniaTuanzi(Tuanzi):
         self.last_roll = roll
         return steps
 
+class SigelicaTuanzi(Tuanzi):
+    def __init__(self, start_pos=1):
+        super().__init__("西格莉卡", start_pos)
+
+    def roll_dice(self) -> int:
+        return random.randint(1, 3)
+
+    def after_rolls(self, round_rolls: Dict[Tuanzi, int], tiles: List[List[Tuanzi]], verbose: bool = False):
+        # Determine ranking based on remaining_distance and stack_idx
+        # First, filter out KingBu which is always last anyway, and get active characters
+        active_chars = [c for c in round_rolls.keys() if c.name != "布大王"]
+        
+        def rank_key(c: Tuanzi):
+            try:
+                stack_idx = tiles[c.position].index(c)
+            except ValueError:
+                stack_idx = 0
+            return (-c.remaining_distance, stack_idx)
+            
+        sorted_chars = sorted(active_chars, key=rank_key, reverse=True)
+        
+        try:
+            my_idx = sorted_chars.index(self)
+        except ValueError:
+            return
+            
+        # Target up to 2 characters ahead of me (lower index in sorted_chars)
+        targets = []
+        if my_idx > 0:
+            targets.append(sorted_chars[my_idx - 1])
+        if my_idx > 1:
+            targets.append(sorted_chars[my_idx - 2])
+            
+        for t in targets:
+            t.step_debuff += 1
+            if verbose:
+                print(f"🎯 {self.name} 標記了 {t.name}，本回合移動減免 1 格！")
+
+class KatishiaTuanzi(Tuanzi):
+    def __init__(self, start_pos=1):
+        super().__init__("卡提希婭", start_pos)
+        self.buff_active = False
+
+    def roll_dice(self) -> int:
+        return random.randint(1, 3)
+
+    def calculate_steps(self, roll: int, all_rolls: Dict[Tuanzi, int], tiles: List[List[Tuanzi]] = None) -> int:
+        steps = roll
+        if self.buff_active:
+            if random.random() < 0.60:
+                steps += 2
+        return steps
+
+    def on_turn_end(self, tiles: List[List['Tuanzi']], forced_last_queue: List['Tuanzi'] = None, verbose: bool = True):
+        super().on_turn_end(tiles, forced_last_queue, verbose)
+        if not self.buff_active:
+            all_chars = []
+            for stack in tiles:
+                for c in stack:
+                    all_chars.append(c)
+            
+            active_chars = [c for c in all_chars if c.name != "布大王"]
+            if not active_chars:
+                return
+
+            def rank_key(c: Tuanzi):
+                try:
+                    stack_idx = tiles[c.position].index(c)
+                except ValueError:
+                    stack_idx = 0
+                return (-c.remaining_distance, stack_idx)
+            
+            sorted_chars = sorted(active_chars, key=rank_key, reverse=True)
+            if sorted_chars and sorted_chars[-1] == self:
+                self.buff_active = True
+                if verbose:
+                    print(f"🔥 {self.name} 處於最後一名，覺醒「絕地反擊」！後續回合 60% 機率額外前進 2 格。")
+
 def get_all_characters():
     return [
         ChisakiTuanzi(),
@@ -459,5 +537,7 @@ def get_all_characters():
         JinhsiTuanzi(),
         CalcharoTuanzi(),
         LucaixTuanzi(),
-        DaniaTuanzi()
+        DaniaTuanzi(),
+        SigelicaTuanzi(),
+        KatishiaTuanzi()
     ]
