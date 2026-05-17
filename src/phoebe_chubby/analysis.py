@@ -7,7 +7,9 @@ from .characters import (
     ChangliTuanzi, JinhsiTuanzi, CalcharoTuanzi,
     KingBuTuanzi, LucaixTuanzi, DaniaTuanzi,
     ChisakiTuanzi, ColettaTuanzi, SigelicaTuanzi,
-    KatishiaTuanzi, LinneTuanzi
+    KatishiaTuanzi, LinneTuanzi, PhoebeTuanzi,
+    AmisTuanzi, ShorekeeperTuanzi, FeixueTuanzi,
+    MorningTuanzi
 )
 from .models import Tuanzi
 
@@ -21,7 +23,10 @@ def run_single_analysis_match(initial_states=None):
     class_map = {
         "弗洛洛": PhroroTuanzi, "西格莉卡": SigelicaTuanzi,
         "尤諾": YunoTuanzi, "卡卡羅": CalcharoTuanzi, "琳奈": LinneTuanzi,
-        "卡提希婭": KatishiaTuanzi, "布大王": KingBuTuanzi
+        "卡提希婭": KatishiaTuanzi, "菲比": PhoebeTuanzi,
+        "愛彌斯": AmisTuanzi, "今汐": JinhsiTuanzi,
+        "守岸人": ShorekeeperTuanzi, "緋雪": FeixueTuanzi,
+        "莫寧": MorningTuanzi, "布大王": KingBuTuanzi
     }
 
     if initial_states:
@@ -36,9 +41,9 @@ def run_single_analysis_match(initial_states=None):
     else:
         # 預設上半場開局 (每人剩 32 格)
         characters = [
-            PhroroTuanzi(), SigelicaTuanzi(),
-            YunoTuanzi(), CalcharoTuanzi(), LinneTuanzi(),
-            KatishiaTuanzi(), KingBuTuanzi()
+            PhoebeTuanzi(), AmisTuanzi(),
+            JinhsiTuanzi(), ShorekeeperTuanzi(), FeixueTuanzi(),
+            MorningTuanzi(), KingBuTuanzi()
         ]
         for char in characters:
             char.remaining_distance = 32
@@ -53,8 +58,9 @@ def run_single_analysis_match(initial_states=None):
             tiles[char.position].append(char)
 
     TILE_EFFECTS = {
-        3: "f1", 6: "rift", 10: "b1", 11: "f1",
-        16: "f1", 20: "rift", 23: "f1", 28: "b1"
+        4: "f1", 6: "rift", 10: "f1", 14: "rift",
+        16: "b1", 20: "f1", 23: "rift", 26: "b1",
+        30: "b1"
     }
 
     forced_last_queue_this = []
@@ -140,7 +146,7 @@ def run_batch_analysis(num_trials=1000, initial_states=None):
         char_names = [name for name in initial_states.keys() if name != "布大王"]
     else:
         # 預設名單
-        char_names = ["弗洛洛", "西格莉卡", "尤諾", "卡卡羅", "琳奈", "卡提希婭"]
+        char_names = ["菲比", "愛彌斯", "今汐", "守岸人", "緋雪", "莫寧"]
 
     stats = {name: {rank: 0 for rank in range(1, len(char_names) + 1)} for name in char_names}
 
@@ -176,18 +182,18 @@ def run_batch_analysis(num_trials=1000, initial_states=None):
         print(f"{name:<10} | {ranks[1]:^5} | {ranks[2]:^5} | {ranks[3]:^5} | {avg:^10.2f}")
 
 if __name__ == "__main__":
-    # 設定下半場起始狀態
-    second_half_states = {
-        "弗洛洛": {"pos": 1, "dist": 32},
-        "西格莉卡": {"pos": 1, "dist": 32},
-        "尤諾": {"pos": 1, "dist": 32},
-        "卡卡羅": {"pos": 1, "dist": 32},
-        "琳奈": {"pos": 1, "dist": 32},
-        "卡提希婭": {"pos": 1, "dist": 32},
+    # 設定起始狀態
+    initial_states = {
+        "菲比": {"pos": 1, "dist": 32},
+        "愛彌斯": {"pos": 1, "dist": 32},
+        "今汐": {"pos": 1, "dist": 32},
+        "守岸人": {"pos": 1, "dist": 32},
+        "緋雪": {"pos": 1, "dist": 32},
+        "莫寧": {"pos": 1, "dist": 32},
         "布大王": {"pos": 32, "dist": 999}
     }
     
-    # 預設執行 10000 場下半場統計
+    # 預設執行 10000 場統計
     trials = 10000
     if len(sys.argv) > 1:
         try:
@@ -195,4 +201,4 @@ if __name__ == "__main__":
         except ValueError:
             pass
             
-    run_batch_analysis(trials, initial_states=second_half_states)
+    run_batch_analysis(trials, initial_states=initial_states)

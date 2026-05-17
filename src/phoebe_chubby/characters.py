@@ -20,10 +20,62 @@ class ChisakiTuanzi(Tuanzi):
             return roll + 2
         return roll
 
+# --- 菲比：歲主庇佑 ---
+class PhoebeTuanzi(Tuanzi):
+    def __init__(self, start_pos=1):
+        super().__init__("菲比", start_pos)
+        self.skill_name = "歲主庇佑"
+
+    def roll_dice(self) -> int:
+        return random.randint(1, 3)
+
+    def prepare_round(self, tiles: List[List[Tuanzi]], forced_last_queue: List[Tuanzi] = None, verbose: bool = True):
+        """菲比目前沒有每回合開始前的特殊邏輯"""
+        super().prepare_round(tiles, forced_last_queue, verbose)
+
+    def calculate_steps(self, roll: int, all_rolls: Dict[Tuanzi, int], tiles: List[List[Tuanzi]] = None) -> int:
+        if random.random() < 0.50:
+            return roll + 1
+        return roll
+
+# --- 緋雪：引路白鳥 ---
+class FeixueTuanzi(Tuanzi):
+    def __init__(self, start_pos=1):
+        super().__init__("緋雪", start_pos)
+        self.skill_name = "引路白鳥"
+        self.has_met_king_bu = False
+
+    def roll_dice(self) -> int:
+        return random.randint(1, 3)
+
+    def prepare_round(self, tiles: List[List[Tuanzi]], forced_last_queue: List[Tuanzi] = None, verbose: bool = True):
+        super().prepare_round(tiles, forced_last_queue, verbose)
+        self._check_king_bu_encounter(tiles, verbose)
+
+    def calculate_steps(self, roll: int, all_rolls: Dict[Tuanzi, int], tiles: List[List[Tuanzi]] = None) -> int:
+        if tiles is not None:
+            self._check_king_bu_encounter(tiles, verbose=False)
+        if self.has_met_king_bu:
+            return roll + 1
+        return roll
+
+    def on_turn_end(self, tiles: List[List[Tuanzi]], forced_last_queue: List[Tuanzi] = None, verbose: bool = True):
+        super().on_turn_end(tiles, forced_last_queue, verbose)
+        self._check_king_bu_encounter(tiles, verbose)
+
+    def _check_king_bu_encounter(self, tiles: List[List[Tuanzi]], verbose: bool = True):
+        if self.has_met_king_bu:
+            return
+        if any(isinstance(c, KingBuTuanzi) for c in tiles[self.position]):
+            self.has_met_king_bu = True
+            if verbose:
+                print(f"🕊️ {self.name} 遇見布大王，觸發{self.skill_label()}！之後每次移動額外前進 1 格。")
+
 # --- 莫寧：3/2/1 循環 ---
 class MorningTuanzi(Tuanzi):
-    def __init__(self):
-        super().__init__("莫寧")
+    def __init__(self, start_pos=1):
+        super().__init__("莫寧", start_pos)
+        self.skill_name = "精密演算"
         self.cycle = [3, 2, 1]
         self.cycle_index = 0
 
@@ -32,9 +84,9 @@ class MorningTuanzi(Tuanzi):
         self.cycle_index = (self.cycle_index + 1) % len(self.cycle)
         return val
 
-    def prepare_round(self, tiles: List[List[Tuanzi]], forced_last_queue: List[Tuanzi] = None):
+    def prepare_round(self, tiles: List[List[Tuanzi]], forced_last_queue: List[Tuanzi] = None, verbose: bool = True):
         """莫寧目前沒有每回合開始前的特殊邏輯"""
-        super().prepare_round(tiles)
+        super().prepare_round(tiles, forced_last_queue, verbose)
 
     def calculate_steps(self, roll: int, all_rolls: Dict[Tuanzi, int], tiles: List[List[Tuanzi]] = None) -> int:
         return roll
@@ -61,15 +113,16 @@ class LinneTuanzi(Tuanzi):
 
 # --- 愛彌斯：中點瞬移 ---
 class AmisTuanzi(Tuanzi):
-    def __init__(self):
-        super().__init__("愛彌斯")
+    def __init__(self, start_pos=1):
+        super().__init__("愛彌斯", start_pos)
+        self.skill_name = "電子幽靈登場"
 
     def roll_dice(self) -> int:
         return random.randint(1, 3)
 
-    def prepare_round(self, tiles: List[List[Tuanzi]], forced_last_queue: List[Tuanzi] = None):
+    def prepare_round(self, tiles: List[List[Tuanzi]], forced_last_queue: List[Tuanzi] = None, verbose: bool = True):
         """愛彌斯目前沒有每回合開始前的特殊邏輯"""
-        super().prepare_round(tiles)
+        super().prepare_round(tiles, forced_last_queue, verbose)
 
     def take_turn(self, tiles: List[List[Tuanzi]], all_rolls: Dict[Tuanzi, int]):
         # 1. 正常的擲骰子與位移
@@ -102,19 +155,20 @@ class AmisTuanzi(Tuanzi):
                     char.position = target_pos
                 
                 self.has_triggered_special = True
-                print(f"✨ [技能瞬移] 愛彌斯感應到 {target_char.name}，帶著上方共 {len(moving_group)} 人疊到了第 {target_pos} 格的頂端！")
+                print(f"✨ {self.name} 觸發{self.skill_label()}，感應到 {target_char.name}，帶著上方共 {len(moving_group)} 人疊到了第 {target_pos} 格的頂端！")
 
 # --- 守岸人：穩定點數 2 或 3 ---
 class ShorekeeperTuanzi(Tuanzi):
-    def __init__(self):
-        super().__init__("守岸人")
+    def __init__(self, start_pos=1):
+        super().__init__("守岸人", start_pos)
+        self.skill_name = "收束的未來"
 
     def roll_dice(self) -> int:
         return random.choice([2, 3])
 
-    def prepare_round(self, tiles: List[List[Tuanzi]], forced_last_queue: List[Tuanzi] = None):
+    def prepare_round(self, tiles: List[List[Tuanzi]], forced_last_queue: List[Tuanzi] = None, verbose: bool = True):
         """守岸人目前沒有每回合開始前的特殊邏輯"""
-        super().prepare_round(tiles)
+        super().prepare_round(tiles, forced_last_queue, verbose)
 
     def calculate_steps(self, roll: int, all_rolls: Dict[Tuanzi, int], tiles: List[List[Tuanzi]] = None) -> int:
         return roll
@@ -226,7 +280,7 @@ class AugustaTuanzi(Tuanzi):
             if forced_last_queue is not None:
                 forced_last_queue.append(self)
             if verbose:
-                print(f"🛌 {self.name} 覺得高處不勝寒，決定原地休息，下一回合將最後行動。")
+                print(f"🛌 {self.name} 觸發{self.skill_label()}，決定原地休息，下一回合將最後行動。")
 
 # --- 尤諾：空間引力 ---
 class YunoTuanzi(Tuanzi):
@@ -259,7 +313,7 @@ class YunoTuanzi(Tuanzi):
             return
 
         if verbose:
-            print(f"🌌 [極大技能觸發] {self.name}發動『全地圖引力』！！所有團子都被吸向中點！")
+            print(f"🌌 {self.name} 觸發{self.skill_label()}！所有團子都被吸向中點！")
 
         # 3. 從各地圖格子中移除這些人，並同步里程
         for c in chars_behind + chars_ahead:
@@ -330,7 +384,7 @@ class ChangliTuanzi(Tuanzi):
             if forced_last_queue is not None:
                 forced_last_queue.append(self)
                 if verbose:
-                    print(f"🕯️  {self.name} 展現『優雅後行』，本回合將最後行動。")
+                    print(f"🕯️  {self.name} 觸發{self.skill_label()}，本回合將最後行動。")
             self.will_be_last_next_round = False
         self.force_last = False
 
@@ -349,6 +403,7 @@ class ChangliTuanzi(Tuanzi):
 class JinhsiTuanzi(Tuanzi):
     def __init__(self, start_pos: int = 1):
         super().__init__("今汐", start_pos)
+        self.skill_name = "令尹之名"
 
     def roll_dice(self) -> int:
         return random.randint(1, 3)
@@ -380,7 +435,7 @@ class JinhsiTuanzi(Tuanzi):
 
     def move(self, steps: int, tiles: List[List[Tuanzi]], verbose: bool = False):
         if getattr(self, '_did_dragon_jump', False) and verbose:
-            msg = f"🐉 {self.name} 發動『騰龍』"
+            msg = f"🐉 {self.name} 觸發{self.skill_label()}"
             if getattr(self, '_dragon_jumped_over', None):
                 msg += f"（趁著 {self._dragon_jumped_over} 休息超車）"
             print(f"{msg}，躍升至堆疊頂端！")
@@ -519,11 +574,13 @@ class KatishiaTuanzi(Tuanzi):
             if sorted_chars and sorted_chars[-1] == self:
                 self.buff_active = True
                 if verbose:
-                    print(f"🔥 {self.name} 處於最後一名，覺醒「絕地反擊」！後續回合 60% 機率額外前進 2 格。")
+                    print(f"🔥 {self.name} 處於最後一名，觸發{self.skill_label()}！後續回合 60% 機率額外前進 2 格。")
 
 def get_all_characters():
     return [
         ChisakiTuanzi(),
+        PhoebeTuanzi(),
+        FeixueTuanzi(),
         MorningTuanzi(),
         LinneTuanzi(),
         AmisTuanzi(),

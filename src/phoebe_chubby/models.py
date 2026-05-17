@@ -5,12 +5,16 @@ from typing import List, Dict
 class Tuanzi:
     name: str
     position: int = 1
+    skill_name: str = ""
     remaining_distance: int = 32 # 剩餘里程數
     direction: int = 1           # 1 代表往 32 走，-1 代表往 1 走
     has_triggered_special: bool = False
 
     def roll_dice(self) -> int:
         return 0 # 子類別實作
+
+    def skill_label(self) -> str:
+        return f"「{self.skill_name}」" if self.skill_name else "技能"
 
     def calculate_steps(self, roll: int, all_rolls: Dict['Tuanzi', int], tiles: List[List['Tuanzi']] = None) -> int:
         return roll

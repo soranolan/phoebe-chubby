@@ -4,7 +4,9 @@ from .characters import (
     ChangliTuanzi, JinhsiTuanzi, CalcharoTuanzi,
     KingBuTuanzi, LucaixTuanzi, DaniaTuanzi,
     ChisakiTuanzi, ColettaTuanzi, SigelicaTuanzi,
-    KatishiaTuanzi, LinneTuanzi
+    KatishiaTuanzi, LinneTuanzi, PhoebeTuanzi,
+    AmisTuanzi, ShorekeeperTuanzi, FeixueTuanzi,
+    MorningTuanzi
 )
 
 COURSE_LENGTH = 32
@@ -12,19 +14,19 @@ COURSE_LENGTH = 32
 def run_simulation(max_rounds=999):
     # --- 定義上半場起始狀態 ---
     characters_in_order = [
-        PhroroTuanzi(start_pos=1),
-        SigelicaTuanzi(start_pos=1),
-        YunoTuanzi(start_pos=1),
-        CalcharoTuanzi(start_pos=1),
-        LinneTuanzi(start_pos=1),
-        KatishiaTuanzi(start_pos=1),
+        PhoebeTuanzi(start_pos=1),
+        AmisTuanzi(start_pos=1),
+        JinhsiTuanzi(start_pos=1),
+        ShorekeeperTuanzi(start_pos=1),
+        FeixueTuanzi(start_pos=1),
+        MorningTuanzi(start_pos=1),
         KingBuTuanzi(start_pos=32)
     ]
     
     # 上半場所有人里程皆為 32，布大王不需跑完
     dist_map = {
-        "弗洛洛": 32, "西格莉卡": 32, "尤諾": 32, "卡卡羅": 32,
-        "琳奈": 32, "卡提希婭": 32,
+        "菲比": 32, "愛彌斯": 32, "今汐": 32, "守岸人": 32,
+        "緋雪": 32, "莫寧": 32,
         "布大王": 999
     }
 
@@ -46,8 +48,9 @@ def run_simulation(max_rounds=999):
     print("📢 獲勝條件：將剩餘里程扣至 0 或以下者獲勝！")
     
     TILE_EFFECTS = {
-        3: "f1", 6: "rift", 10: "b1", 11: "f1",
-        16: "f1", 20: "rift", 23: "f1", 28: "b1"
+        4: "f1", 6: "rift", 10: "f1", 14: "rift",
+        16: "b1", 20: "f1", 23: "rift", 26: "b1",
+        30: "b1"
     }
     
     forced_last_queue_this = []
@@ -124,14 +127,14 @@ def run_simulation(max_rounds=999):
                         char.move(total_steps, tiles, verbose=True)
                 elif effect == "b1":
                     total_steps = -1 + bonus
-                    print(f"⚠️ {char.name} 踩到陷阱格！倒退 {abs(total_steps)} 格。")
+                    print(f"⚠️  {char.name} 踩到陷阱格！倒退 {abs(total_steps)} 格。")
                     if total_steps != 0:
                         char.move(total_steps, tiles, verbose=True)
                 elif effect == "rift":
                     print(f"🌀 {char.name} 觸發空間裂隙！第 {char.position} 格順序重組為: ", end="")
                     random.shuffle(tiles[char.position])
                     print([c.name for c in tiles[char.position]])
-                print(f"📍 特技後，{char.name} 最終位於第 {char.position} 格 (剩 {char.remaining_distance})。")
+                print(f"📍 地圖效果後，{char.name} 最終位於第 {char.position} 格 (剩 {char.remaining_distance})。")
             
             # 回合結束勾子 (例如長離的後行判定)
             char.on_turn_end(tiles, forced_last_queue_next, verbose=True)
