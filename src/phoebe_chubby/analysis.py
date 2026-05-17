@@ -41,9 +41,9 @@ def run_single_analysis_match(initial_states=None):
     else:
         # 預設上半場開局 (每人剩 32 格)
         characters = [
-            PhoebeTuanzi(), AmisTuanzi(),
-            JinhsiTuanzi(), ShorekeeperTuanzi(), FeixueTuanzi(),
-            MorningTuanzi(), KingBuTuanzi()
+            SigelicaTuanzi(), PhroroTuanzi(), LinneTuanzi(),
+            ShorekeeperTuanzi(), AmisTuanzi(), FeixueTuanzi(),
+            KingBuTuanzi()
         ]
         for char in characters:
             char.remaining_distance = 32
@@ -146,7 +146,7 @@ def run_batch_analysis(num_trials=1000, initial_states=None):
         char_names = [name for name in initial_states.keys() if name != "布大王"]
     else:
         # 預設名單
-        char_names = ["菲比", "愛彌斯", "今汐", "守岸人", "緋雪", "莫寧"]
+        char_names = ["西格莉卡", "弗洛洛", "琳奈", "守岸人", "愛彌斯", "緋雪"]
 
     stats = {name: {rank: 0 for rank in range(1, len(char_names) + 1)} for name in char_names}
 
@@ -184,12 +184,12 @@ def run_batch_analysis(num_trials=1000, initial_states=None):
 if __name__ == "__main__":
     # 設定起始狀態
     initial_states = {
-        "菲比": {"pos": 1, "dist": 32},
-        "愛彌斯": {"pos": 1, "dist": 32},
-        "今汐": {"pos": 1, "dist": 32},
+        "西格莉卡": {"pos": 1, "dist": 32},
+        "弗洛洛": {"pos": 1, "dist": 32},
+        "琳奈": {"pos": 1, "dist": 32},
         "守岸人": {"pos": 1, "dist": 32},
+        "愛彌斯": {"pos": 1, "dist": 32},
         "緋雪": {"pos": 1, "dist": 32},
-        "莫寧": {"pos": 1, "dist": 32},
         "布大王": {"pos": 32, "dist": 999}
     }
     

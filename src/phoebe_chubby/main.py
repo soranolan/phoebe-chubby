@@ -14,19 +14,19 @@ COURSE_LENGTH = 32
 def run_simulation(max_rounds=999):
     # --- 定義上半場起始狀態 ---
     characters_in_order = [
-        PhoebeTuanzi(start_pos=1),
-        AmisTuanzi(start_pos=1),
-        JinhsiTuanzi(start_pos=1),
+        SigelicaTuanzi(start_pos=1),
+        PhroroTuanzi(start_pos=1),
+        LinneTuanzi(start_pos=1),
         ShorekeeperTuanzi(start_pos=1),
+        AmisTuanzi(start_pos=1),
         FeixueTuanzi(start_pos=1),
-        MorningTuanzi(start_pos=1),
         KingBuTuanzi(start_pos=32)
     ]
     
     # 上半場所有人里程皆為 32，布大王不需跑完
     dist_map = {
-        "菲比": 32, "愛彌斯": 32, "今汐": 32, "守岸人": 32,
-        "緋雪": 32, "莫寧": 32,
+        "西格莉卡": 32, "弗洛洛": 32, "琳奈": 32, "守岸人": 32,
+        "愛彌斯": 32, "緋雪": 32,
         "布大王": 999
     }
 
