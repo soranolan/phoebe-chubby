@@ -1,4 +1,5 @@
 import random
+from .logging import actor_name, event_name
 from .characters import (
     AugustaTuanzi, YunoTuanzi, PhroroTuanzi,
     ChangliTuanzi, JinhsiTuanzi, CalcharoTuanzi,
@@ -14,19 +15,19 @@ COURSE_LENGTH = 32
 def run_simulation(max_rounds=999):
     # --- 定義上半場起始狀態 ---
     characters_in_order = [
-        SigelicaTuanzi(start_pos=1),
-        PhroroTuanzi(start_pos=1),
-        LinneTuanzi(start_pos=1),
-        ShorekeeperTuanzi(start_pos=1),
-        AmisTuanzi(start_pos=1),
-        FeixueTuanzi(start_pos=1),
+        YunoTuanzi(start_pos=1),
+        CalcharoTuanzi(start_pos=1),
+        KatishiaTuanzi(start_pos=1),
+        JinhsiTuanzi(start_pos=1),
+        PhoebeTuanzi(start_pos=1),
+        MorningTuanzi(start_pos=1),
         KingBuTuanzi(start_pos=32)
     ]
     
     # 上半場所有人里程皆為 32，布大王不需跑完
     dist_map = {
-        "西格莉卡": 32, "弗洛洛": 32, "琳奈": 32, "守岸人": 32,
-        "愛彌斯": 32, "緋雪": 32,
+        "尤諾": 32, "卡卡羅": 32, "卡提希婭": 32, "今汐": 32,
+        "菲比": 32, "莫寧": 32,
         "布大王": 999
     }
 
@@ -92,6 +93,7 @@ def run_simulation(max_rounds=999):
                 char.has_triggered_special = True
 
             roll = round_rolls[char]
+            char.step_modifier_reason = ""
             calculated_steps = char.calculate_steps(roll, round_rolls, tiles)
             
             steps = calculated_steps - char.step_debuff
@@ -100,7 +102,10 @@ def run_simulation(max_rounds=999):
             
             # is_skipping 由 calculate_steps 動態決定 (如奧古斯塔的技能)
             if char.is_skipping:
-                print(f"😴 {char.name} 本回合休息，待在第 {char.position} 格 (剩 {char.remaining_distance})。")
+                print(
+                    f"😴 {actor_name(char.name)} | {event_name('休息')} | "
+                    f"待在第 {char.position:02d} 格 | 剩 {char.remaining_distance:>3}"
+                )
                 char.on_turn_end(tiles, forced_last_queue_next, verbose=True)
                 continue
 
@@ -108,13 +113,19 @@ def run_simulation(max_rounds=999):
             old_pos = char.position
             char.move(steps, tiles, verbose=True)
             
-            msg = f"🎲 {char.name} 擲出了 {roll} 點"
+            msg = f"🎲 {actor_name(char.name)} | {event_name('擲骰')} | {roll} 點"
             if steps != roll:
-                msg += f" (技能修正為 {steps} 步)"
+                if char.step_modifier_reason:
+                    msg += f" ({char.step_modifier_reason}，技能修正為 {steps} 步)"
+                else:
+                    msg += f" (技能修正為 {steps} 步)"
             
-            msg += f"，從第 {old_pos} 格 (剩 {old_dist}) 出發..."
+            msg += f" | 從第 {old_pos:02d} 格出發 | 剩 {old_dist:>3}"
             print(msg)
-            print(f"🏃 {char.name} 移動到了第 {char.position} 格 (剩 {char.remaining_distance})。")
+            print(
+                f"🏃 {actor_name(char.name)} | {event_name('移動')} | "
+                f"到了第 {char.position:02d} 格 | 剩 {char.remaining_distance:>3}"
+            )
 
             effect = TILE_EFFECTS.get(char.position)
             if effect:
@@ -122,19 +133,26 @@ def run_simulation(max_rounds=999):
                 
                 if effect == "f1":
                     total_steps = 1 + bonus
-                    print(f"🚀 {char.name} 踩到加速格！額外前進 {total_steps} 格。")
+                    print(f"🚀 {actor_name(char.name)} | {event_name('加速')} | 額外前進 {total_steps} 格")
                     if total_steps != 0:
                         char.move(total_steps, tiles, verbose=True)
                 elif effect == "b1":
                     total_steps = -1 + bonus
-                    print(f"⚠️  {char.name} 踩到陷阱格！倒退 {abs(total_steps)} 格。")
+                    print(f"⚠️  {actor_name(char.name)} | {event_name('陷阱')} | 倒退 {abs(total_steps)} 格")
                     if total_steps != 0:
                         char.move(total_steps, tiles, verbose=True)
                 elif effect == "rift":
-                    print(f"🌀 {char.name} 觸發空間裂隙！第 {char.position} 格順序重組為: ", end="")
+                    print(
+                        f"🌀 {actor_name(char.name)} | {event_name('裂隙')} | "
+                        f"第 {char.position:02d} 格順序重組為: ",
+                        end=""
+                    )
                     random.shuffle(tiles[char.position])
                     print([c.name for c in tiles[char.position]])
-                print(f"📍 地圖效果後，{char.name} 最終位於第 {char.position} 格 (剩 {char.remaining_distance})。")
+                print(
+                    f"📍 {actor_name(char.name)} | {event_name('結果')} | "
+                    f"最終位於第 {char.position:02d} 格 | 剩 {char.remaining_distance:>3}"
+                )
             
             # 回合結束勾子 (例如長離的後行判定)
             char.on_turn_end(tiles, forced_last_queue_next, verbose=True)

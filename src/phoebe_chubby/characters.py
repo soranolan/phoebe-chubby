@@ -35,6 +35,7 @@ class PhoebeTuanzi(Tuanzi):
 
     def calculate_steps(self, roll: int, all_rolls: Dict[Tuanzi, int], tiles: List[List[Tuanzi]] = None) -> int:
         if random.random() < 0.50:
+            self.step_modifier_reason = f"觸發{self.skill_label()}"
             return roll + 1
         return roll
 
@@ -282,10 +283,11 @@ class AugustaTuanzi(Tuanzi):
             if verbose:
                 print(f"🛌 {self.name} 觸發{self.skill_label()}，決定原地休息，下一回合將最後行動。")
 
-# --- 尤諾：空間引力 ---
+# --- 尤諾：錨定命途 ---
 class YunoTuanzi(Tuanzi):
     def __init__(self, start_pos: int = 1):
         super().__init__("尤諾", start_pos)
+        self.skill_name = "錨定命途"
 
     def roll_dice(self) -> int:
         return random.randint(1, 3)
@@ -443,10 +445,11 @@ class JinhsiTuanzi(Tuanzi):
             self._dragon_jumped_over = None
         super().move(steps, tiles, verbose)
 
-# --- 卡卡羅：絕地追擊 ---
+# --- 卡卡羅：如影隨形 ---
 class CalcharoTuanzi(Tuanzi):
     def __init__(self, start_pos: int = 1):
         super().__init__("卡卡羅", start_pos)
+        self.skill_name = "如影隨形"
 
     def roll_dice(self) -> int:
         return random.randint(1, 3)
@@ -466,6 +469,7 @@ class CalcharoTuanzi(Tuanzi):
             stack = tiles[self.position]
             if stack and stack[0] == self:
                 # print(f"⚔️ {self.name} 處於絕地 (最後一名)，爆發前進！")
+                self.step_modifier_reason = f"觸發{self.skill_label()}"
                 return roll + 3
         return roll
 
@@ -539,6 +543,7 @@ class SigelicaTuanzi(Tuanzi):
 class KatishiaTuanzi(Tuanzi):
     def __init__(self, start_pos=1):
         super().__init__("卡提希婭", start_pos)
+        self.skill_name = "翻盤橋段"
         self.buff_active = False
 
     def roll_dice(self) -> int:
@@ -548,6 +553,7 @@ class KatishiaTuanzi(Tuanzi):
         steps = roll
         if self.buff_active:
             if random.random() < 0.60:
+                self.step_modifier_reason = f"觸發{self.skill_label()}"
                 steps += 2
         return steps
 

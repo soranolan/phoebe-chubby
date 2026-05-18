@@ -23,10 +23,12 @@ class Tuanzi:
     is_skipping: bool = False      # 本回合是否跳過行動
     force_last: bool = False       # 本回合是否強制最後一個行動
     step_debuff: int = 0           # 本回合受到的步數減免
+    step_modifier_reason: str = "" # 本回合步數修正原因
 
     def prepare_round(self, tiles: List[List['Tuanzi']], forced_last_queue: List['Tuanzi'] = None, verbose: bool = True):
         """每回合開始前的準備動作"""
         self.step_debuff = 0
+        self.step_modifier_reason = ""
         pass
 
     def after_rolls(self, round_rolls: Dict['Tuanzi', int], tiles: List[List['Tuanzi']], verbose: bool = False):

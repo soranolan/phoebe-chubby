@@ -11,9 +11,34 @@ from .characters import (
     AmisTuanzi, ShorekeeperTuanzi, FeixueTuanzi,
     MorningTuanzi
 )
+from .logging import pad_display
 from .models import Tuanzi
 
 COURSE_LENGTH = 32
+QUALIFY_RANK = 3
+
+
+def ordinal(rank: int) -> str:
+    if 10 <= rank % 100 <= 20:
+        suffix = "th"
+    else:
+        suffix = {1: "st", 2: "nd", 3: "rd"}.get(rank % 10, "th")
+    return f"{rank}{suffix}"
+
+
+def pct(count: int, total: int) -> float:
+    return count / total * 100 if total else 0
+
+
+def pct_cell(count: int, total: int) -> str:
+    return f"{pct(count, total):>6.2f}%"
+
+
+def print_table(headers: List[str], rows: List[List[str]]):
+    print(" | ".join(headers))
+    print("-" * (sum(len(cell) for cell in headers) + 3 * (len(headers) - 1)))
+    for row in rows:
+        print(" | ".join(row))
 
 def run_single_analysis_match(initial_states=None):
     """
@@ -41,12 +66,12 @@ def run_single_analysis_match(initial_states=None):
     else:
         # 預設上半場開局 (每人剩 32 格)
         characters = [
-            SigelicaTuanzi(), PhroroTuanzi(), LinneTuanzi(),
-            ShorekeeperTuanzi(), AmisTuanzi(), FeixueTuanzi(),
+            YunoTuanzi(), CalcharoTuanzi(), KatishiaTuanzi(),
+            JinhsiTuanzi(), PhoebeTuanzi(), MorningTuanzi(),
             KingBuTuanzi()
         ]
         for char in characters:
-            char.remaining_distance = 32
+            char.remaining_distance = 999 if isinstance(char, KingBuTuanzi) else 32
         
     random.shuffle(characters)
     
@@ -90,6 +115,7 @@ def run_single_analysis_match(initial_states=None):
                 char.has_triggered_special = True
 
             roll = round_rolls[char]
+            char.step_modifier_reason = ""
             calculated_steps = char.calculate_steps(roll, round_rolls, tiles)
             
             steps = calculated_steps - char.step_debuff
@@ -146,7 +172,7 @@ def run_batch_analysis(num_trials=1000, initial_states=None):
         char_names = [name for name in initial_states.keys() if name != "布大王"]
     else:
         # 預設名單
-        char_names = ["西格莉卡", "弗洛洛", "琳奈", "守岸人", "愛彌斯", "緋雪"]
+        char_names = ["尤諾", "卡卡羅", "卡提希婭", "今汐", "菲比", "莫寧"]
 
     stats = {name: {rank: 0 for rank in range(1, len(char_names) + 1)} for name in char_names}
 
@@ -168,28 +194,89 @@ def run_batch_analysis(num_trials=1000, initial_states=None):
     end_time = time.time()
     duration = end_time - start_time
 
-    print(f"\n\n📊 === 最終平衡性分析報告 (耗時: {duration:.2f} 秒) ===")
-    print(f"{'角色':<8} | {'1st':^5} | {'2nd':^5} | {'3rd':^5} | {'平均名次':^8}")
-    print("-" * 50)
-    
     summary = []
     for name, ranks in stats.items():
         avg = sum(r * c for r, c in ranks.items()) / num_trials
         summary.append((name, ranks, avg))
     
-    summary.sort(key=lambda x: x[2])
+    summary.sort(
+        key=lambda x: (
+            -sum(x[1][rank] for rank in range(1, min(QUALIFY_RANK, len(char_names)) + 1)),
+            x[2],
+        )
+    )
+
+    qualify_rank = min(QUALIFY_RANK, len(char_names))
+
+    print(f"\n\n📊 === 最終平衡性分析報告 (耗時: {duration:.2f} 秒) ===")
+    print(f"\n🏁 六進三決策摘要（晉級線：Top {qualify_rank}）")
+    summary_headers = [
+        pad_display("角色", 10),
+        f"{'進前三':^7}",
+        f"{'進前三%':^9}",
+        f"{'淘汰%':^9}",
+        f"{'冠軍%':^9}",
+        f"{'墊底%':^9}",
+        f"{'平均名次':^10}",
+    ]
+    summary_rows = []
     for name, ranks, avg in summary:
-        print(f"{name:<10} | {ranks[1]:^5} | {ranks[2]:^5} | {ranks[3]:^5} | {avg:^10.2f}")
+        qualified = sum(ranks[rank] for rank in range(1, qualify_rank + 1))
+        eliminated = num_trials - qualified
+        summary_rows.append([
+            pad_display(name, 10),
+            f"{qualified:^7}",
+            pct_cell(qualified, num_trials),
+            pct_cell(eliminated, num_trials),
+            pct_cell(ranks[1], num_trials),
+            pct_cell(ranks[len(char_names)], num_trials),
+            f"{avg:^10.2f}",
+        ])
+    print_table(summary_headers, summary_rows)
+
+    rank_headers = [f"{ordinal(rank):^7}" for rank in range(1, len(char_names) + 1)]
+
+    print("\n📈 名次次數分布")
+    count_headers = [pad_display("角色", 10)] + rank_headers + [f"{'平均名次':^10}"]
+    count_rows = []
+    for name, ranks, avg in summary:
+        row = [pad_display(name, 10)]
+        row.extend(f"{ranks[rank]:^7}" for rank in range(1, len(char_names) + 1))
+        row.append(f"{avg:^10.2f}")
+        count_rows.append(row)
+    print_table(count_headers, count_rows)
+
+    print("\n📊 單名次機率")
+    rate_headers = [pad_display("角色", 10)] + rank_headers
+    rate_rows = []
+    for name, ranks, _avg in summary:
+        row = [pad_display(name, 10)]
+        row.extend(pct_cell(ranks[rank], num_trials) for rank in range(1, len(char_names) + 1))
+        rate_rows.append(row)
+    print_table(rate_headers, rate_rows)
+
+    print("\n📉 累計 TopN 機率")
+    cumulative_headers = [pad_display("角色", 10)]
+    cumulative_headers.extend(f"{f'Top{rank}':^7}" for rank in range(1, len(char_names) + 1))
+    cumulative_rows = []
+    for name, ranks, _avg in summary:
+        cumulative = 0
+        row = [pad_display(name, 10)]
+        for rank in range(1, len(char_names) + 1):
+            cumulative += ranks[rank]
+            row.append(pct_cell(cumulative, num_trials))
+        cumulative_rows.append(row)
+    print_table(cumulative_headers, cumulative_rows)
 
 if __name__ == "__main__":
     # 設定起始狀態
     initial_states = {
-        "西格莉卡": {"pos": 1, "dist": 32},
-        "弗洛洛": {"pos": 1, "dist": 32},
-        "琳奈": {"pos": 1, "dist": 32},
-        "守岸人": {"pos": 1, "dist": 32},
-        "愛彌斯": {"pos": 1, "dist": 32},
-        "緋雪": {"pos": 1, "dist": 32},
+        "尤諾": {"pos": 1, "dist": 32},
+        "卡卡羅": {"pos": 1, "dist": 32},
+        "卡提希婭": {"pos": 1, "dist": 32},
+        "今汐": {"pos": 1, "dist": 32},
+        "菲比": {"pos": 1, "dist": 32},
+        "莫寧": {"pos": 1, "dist": 32},
         "布大王": {"pos": 32, "dist": 999}
     }
     
