@@ -92,10 +92,11 @@ class MorningTuanzi(Tuanzi):
     def calculate_steps(self, roll: int, all_rolls: Dict[Tuanzi, int], tiles: List[List[Tuanzi]] = None) -> int:
         return roll
 
-# --- 琳奈：60% 雙倍, 20% 停頓, 20% 正常 ---
+# --- 琳奈：炫彩時刻 ---
 class LinneTuanzi(Tuanzi):
     def __init__(self, start_pos=1):
         super().__init__("琳奈", start_pos)
+        self.skill_name = "炫彩時刻"
 
     def roll_dice(self) -> int:
         return random.randint(1, 3)
@@ -348,10 +349,11 @@ class YunoTuanzi(Tuanzi):
             if chars_ahead:
                 print(f"  - 前方 {len(chars_ahead)} 名團子被吸至頭頂")
 
-# --- 弗洛洛：底層爆發 ---
+# --- 弗洛洛：優雅陰謀 ---
 class PhroroTuanzi(Tuanzi):
     def __init__(self, start_pos: int = 1):
         super().__init__("弗洛洛", start_pos)
+        self.skill_name = "優雅陰謀"
         self.extra_steps = 0
 
     def roll_dice(self) -> int:
