@@ -70,8 +70,6 @@ def run_single_analysis_match(initial_states=None):
             PhroroTuanzi(), LinneTuanzi(), FeixueTuanzi(),
             KingBuTuanzi()
         ]
-        for char in characters:
-            char.remaining_distance = 999 if isinstance(char, KingBuTuanzi) else 32
         
     random.shuffle(characters)
     

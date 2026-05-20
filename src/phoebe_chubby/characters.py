@@ -195,7 +195,7 @@ class ColettaTuanzi(Tuanzi):
 # --- 布大王：逆行者 ---
 class KingBuTuanzi(Tuanzi):
     def __init__(self, start_pos: int = 32):
-        super().__init__("布大王", start_pos)
+        super().__init__("布大王", start_pos, remaining_distance=999)
         self.direction = -1 # 往 0 走
         self.insert_at_bottom = True # 他永遠墊底
         self.round_count = 0

@@ -23,17 +23,9 @@ def run_simulation(max_rounds=999):
         FeixueTuanzi(start_pos=1),
         KingBuTuanzi(start_pos=32)
     ]
-    
-    # 上半場所有人里程皆為 32，布大王不需跑完
-    dist_map = {
-        "菲比": 32, "卡卡羅": 32, "莫寧": 32, "弗洛洛": 32,
-        "琳奈": 32, "緋雪": 32,
-        "布大王": 999
-    }
 
     tiles = [[] for _ in range(COURSE_LENGTH + 1)]
     for char in characters_in_order:
-        char.remaining_distance = dist_map.get(char.name, 32)
         # 上半場從 1 號位出發，技能尚未觸發
             
         # 放置團子
