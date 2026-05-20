@@ -3,17 +3,14 @@ import sys
 import time
 from typing import List, Dict
 from .board import DEFAULT_MAP
-from .characters import (
-    AugustaTuanzi, YunoTuanzi, PhroroTuanzi,
-    ChangliTuanzi, JinhsiTuanzi, CalcharoTuanzi,
-    KingBuTuanzi, LucaixTuanzi, DaniaTuanzi,
-    ChisakiTuanzi, ColettaTuanzi, SigelicaTuanzi,
-    KatishiaTuanzi, LinneTuanzi, PhoebeTuanzi,
-    AmisTuanzi, ShorekeeperTuanzi, FeixueTuanzi,
-    MorningTuanzi
-)
+from .characters import KingBuTuanzi
 from .logging import pad_display
 from .models import Tuanzi
+from .roster import (
+    create_default_participants,
+    create_participants_from_states,
+    default_competitor_names,
+)
 
 QUALIFY_RANK = 3
 
@@ -45,31 +42,11 @@ def run_single_analysis_match(initial_states=None):
     執行單場里程制比賽。
     :param initial_states: 初始狀態 Dict, 例如 {"長離": {"pos": 32, "dist": 32}, ...}
     """
-    class_map = {
-        "弗洛洛": PhroroTuanzi, "西格莉卡": SigelicaTuanzi,
-        "尤諾": YunoTuanzi, "卡卡羅": CalcharoTuanzi, "琳奈": LinneTuanzi,
-        "卡提希婭": KatishiaTuanzi, "菲比": PhoebeTuanzi,
-        "愛彌斯": AmisTuanzi, "今汐": JinhsiTuanzi,
-        "守岸人": ShorekeeperTuanzi, "緋雪": FeixueTuanzi,
-        "莫寧": MorningTuanzi, "布大王": KingBuTuanzi
-    }
-
     if initial_states:
-        characters = []
-        for name, state in initial_states.items():
-            char = class_map[name](start_pos=state["pos"])
-            char.remaining_distance = state["dist"]
-            # 如果起始位置就在中點之後，預設技能已用過
-            if char.position >= 16:
-                char.has_triggered_special = True
-            characters.append(char)
+        characters = create_participants_from_states(initial_states)
     else:
         # 預設上半場開局 (每人剩 32 格)
-        characters = [
-            PhoebeTuanzi(), CalcharoTuanzi(), MorningTuanzi(),
-            PhroroTuanzi(), LinneTuanzi(), FeixueTuanzi(),
-            KingBuTuanzi()
-        ]
+        characters = create_default_participants()
         
     random.shuffle(characters)
     
@@ -164,7 +141,7 @@ def run_batch_analysis(num_trials=1000, initial_states=None):
         char_names = [name for name in initial_states.keys() if name != "布大王"]
     else:
         # 預設名單
-        char_names = ["菲比", "卡卡羅", "莫寧", "弗洛洛", "琳奈", "緋雪"]
+        char_names = default_competitor_names()
 
     stats = {name: {rank: 0 for rank in range(1, len(char_names) + 1)} for name in char_names}
 
@@ -261,17 +238,6 @@ def run_batch_analysis(num_trials=1000, initial_states=None):
     print_table(cumulative_headers, cumulative_rows)
 
 if __name__ == "__main__":
-    # 設定起始狀態
-    initial_states = {
-        "菲比": {"pos": 1, "dist": 32},
-        "卡卡羅": {"pos": 1, "dist": 32},
-        "莫寧": {"pos": 1, "dist": 32},
-        "弗洛洛": {"pos": 1, "dist": 32},
-        "琳奈": {"pos": 1, "dist": 32},
-        "緋雪": {"pos": 1, "dist": 32},
-        "布大王": {"pos": 32, "dist": 999}
-    }
-    
     # 預設執行 10000 場統計
     trials = 10000
     if len(sys.argv) > 1:
@@ -280,4 +246,4 @@ if __name__ == "__main__":
         except ValueError:
             pass
             
-    run_batch_analysis(trials, initial_states=initial_states)
+    run_batch_analysis(trials)

@@ -1,27 +1,12 @@
 import random
 from .board import DEFAULT_MAP
 from .logging import actor_name, event_name
-from .characters import (
-    AugustaTuanzi, YunoTuanzi, PhroroTuanzi,
-    ChangliTuanzi, JinhsiTuanzi, CalcharoTuanzi,
-    KingBuTuanzi, LucaixTuanzi, DaniaTuanzi,
-    ChisakiTuanzi, ColettaTuanzi, SigelicaTuanzi,
-    KatishiaTuanzi, LinneTuanzi, PhoebeTuanzi,
-    AmisTuanzi, ShorekeeperTuanzi, FeixueTuanzi,
-    MorningTuanzi
-)
+from .characters import KingBuTuanzi
+from .roster import create_default_participants
 
 def run_simulation(max_rounds=999):
     # --- 定義上半場起始狀態 ---
-    characters_in_order = [
-        PhoebeTuanzi(start_pos=1),
-        CalcharoTuanzi(start_pos=1),
-        MorningTuanzi(start_pos=1),
-        PhroroTuanzi(start_pos=1),
-        LinneTuanzi(start_pos=1),
-        FeixueTuanzi(start_pos=1),
-        KingBuTuanzi(start_pos=32)
-    ]
+    characters_in_order = create_default_participants()
 
     tiles = DEFAULT_MAP.create_tiles()
     for char in characters_in_order:
