@@ -1,4 +1,5 @@
 import random
+from .board import DEFAULT_MAP
 from .logging import actor_name, event_name
 from .characters import (
     AugustaTuanzi, YunoTuanzi, PhroroTuanzi,
@@ -9,8 +10,6 @@ from .characters import (
     AmisTuanzi, ShorekeeperTuanzi, FeixueTuanzi,
     MorningTuanzi
 )
-
-COURSE_LENGTH = 32
 
 def run_simulation(max_rounds=999):
     # --- 定義上半場起始狀態 ---
@@ -24,7 +23,7 @@ def run_simulation(max_rounds=999):
         KingBuTuanzi(start_pos=32)
     ]
 
-    tiles = [[] for _ in range(COURSE_LENGTH + 1)]
+    tiles = DEFAULT_MAP.create_tiles()
     for char in characters_in_order:
         # 上半場從 1 號位出發，技能尚未觸發
             
@@ -39,12 +38,6 @@ def run_simulation(max_rounds=999):
 
     print("=== 鳴潮小團快跑 模擬開始 (上半場) ===")
     print("📢 獲勝條件：將剩餘里程扣至 0 或以下者獲勝！")
-    
-    TILE_EFFECTS = {
-        4: "f1", 6: "rift", 10: "f1", 14: "rift",
-        16: "b1", 20: "f1", 23: "rift", 26: "b1",
-        30: "b1"
-    }
     
     forced_last_queue_this = []
     forced_last_queue_next = []
@@ -119,7 +112,7 @@ def run_simulation(max_rounds=999):
                 f"到了第 {char.position:02d} 格 | 剩 {char.remaining_distance:>3}"
             )
 
-            effect = TILE_EFFECTS.get(char.position)
+            effect = DEFAULT_MAP.effect_at(char.position)
             if effect:
                 bonus = char.tile_effect_bonus(effect)
                 

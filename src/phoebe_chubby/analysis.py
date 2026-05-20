@@ -2,6 +2,7 @@ import random
 import sys
 import time
 from typing import List, Dict
+from .board import DEFAULT_MAP
 from .characters import (
     AugustaTuanzi, YunoTuanzi, PhroroTuanzi,
     ChangliTuanzi, JinhsiTuanzi, CalcharoTuanzi,
@@ -14,7 +15,6 @@ from .characters import (
 from .logging import pad_display
 from .models import Tuanzi
 
-COURSE_LENGTH = 32
 QUALIFY_RANK = 3
 
 
@@ -73,18 +73,12 @@ def run_single_analysis_match(initial_states=None):
         
     random.shuffle(characters)
     
-    tiles = [[] for _ in range(COURSE_LENGTH + 1)]
+    tiles = DEFAULT_MAP.create_tiles()
     for char in characters:
         if char.insert_at_bottom:
             tiles[char.position].insert(0, char)
         else:
             tiles[char.position].append(char)
-
-    TILE_EFFECTS = {
-        4: "f1", 6: "rift", 10: "f1", 14: "rift",
-        16: "b1", 20: "f1", 23: "rift", 26: "b1",
-        30: "b1"
-    }
 
     forced_last_queue_this = []
     forced_last_queue_next = []
@@ -127,7 +121,7 @@ def run_single_analysis_match(initial_states=None):
 
             char.move(steps, tiles)
             
-            effect = TILE_EFFECTS.get(char.position)
+            effect = DEFAULT_MAP.effect_at(char.position)
             if effect:
                 bonus = char.tile_effect_bonus(effect)
                 if effect == "f1":
