@@ -507,6 +507,7 @@ class DaniaTuanzi(Tuanzi):
 class SigelicaTuanzi(Tuanzi):
     def __init__(self, start_pos=1):
         super().__init__("西格莉卡", start_pos)
+        self.skill_name = "日靈，幫幫忙"
 
     def roll_dice(self) -> int:
         return random.randint(1, 3)

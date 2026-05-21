@@ -43,12 +43,12 @@ CHARACTER_CLASSES: Dict[str, Type[Tuanzi]] = {
 }
 
 DEFAULT_PARTICIPANTS = [
-    ParticipantSpec(KatishiaTuanzi, start_pos=1),
-    ParticipantSpec(YunoTuanzi, start_pos=1),
-    ParticipantSpec(JinhsiTuanzi, start_pos=1),
-    ParticipantSpec(PhoebeTuanzi, start_pos=1),
-    ParticipantSpec(FeixueTuanzi, start_pos=1),
-    ParticipantSpec(MorningTuanzi, start_pos=1),
+    ParticipantSpec(AmisTuanzi, start_pos=1),
+    ParticipantSpec(ShorekeeperTuanzi, start_pos=1),
+    ParticipantSpec(SigelicaTuanzi, start_pos=1),
+    ParticipantSpec(LinneTuanzi, start_pos=1),
+    ParticipantSpec(CalcharoTuanzi, start_pos=1),
+    ParticipantSpec(PhroroTuanzi, start_pos=1),
     ParticipantSpec(KingBuTuanzi, start_pos=32),
 ]
 
